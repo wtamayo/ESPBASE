@@ -1,2 +1,2 @@
-# Alaska-Barge
-Coeur Alaska Barge
+# ESP32 Base
+Base for new projects

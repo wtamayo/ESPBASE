@@ -70,4 +70,8 @@ static Timeoutus_t timOut10s = 10 * 1000000;
 static Timeoutus_t timOut60s = 60 * 1000000;
 static Timeoutus_t timOut300s = 300 * 1000000;
 
+// Priting material
+static const char* SEP = ":";
+
+
 #endif

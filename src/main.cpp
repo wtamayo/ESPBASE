@@ -1,3 +1,21 @@
+/***************************************************************************************
+ * 
+ * Multi-task communication hub on ESP32:
+ *  
+ * Each interface runs in its own task:
+ *  RS232 → vAppTsk1
+ *  UDP → vAppTsk2
+ *  CAN → vAppTsk3
+ *  
+ *  All tasks send messages to a central mailbox (queue)
+ *  A dispatcher task (vPrintTsk) receives and processes/logs messages
+ *  This is basically a producer → queue → consumer pattern
+ * 
+ * 
+ *
+ ***************************************************************************************
+ */
+
 #include "includes.h"
 #include "utils.h"
 #include "drivers.h"
@@ -6,7 +24,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/ringbuf.h"
 #include "freertos/task.h"
-
 
 #define DEBUG 1
 
@@ -20,11 +37,13 @@
 #define debugx(x, base)
 #endif
 
-#if CONFIG_FREERTOS_UNICORE
-  static const BaseType_t app_cpu = 0;
-#else
+
+//#if CONFIG_FREERTOS_UNICORE
+  static const BaseType_t drv_cpu = 0;
+//#else
   static const BaseType_t app_cpu = 1;
-#endif
+//#endif
+// TODO: Assign WiFi to another core 
 
 #if USE_TASK_MBOX
 QueueHandle_t xQueue;
@@ -37,21 +56,27 @@ TaskHandle_t hPrintTsk = NULL;
 // Dispatching Mailbox, can also be checked by tasks
 void vPrintTsk( void *pvParameters ) 
 {
-    Data_t xMessage;
+    Data_t xMessage;    
+    char buffer[80];
 
     // Identify message source and place message on specific task's qeueue/struct
     while(1) 
     {     
-      if (xQueueReceive(xQueue, &xMessage, (TickType_t)1000)) 
-      {    
-          debugln(String(millis()) + ": " + xMessage.msg + ":" + String(xMessage.value));
+      if (xQueueReceive(xQueue, &xMessage, (TickType_t)1000) == pdPASS) 
+      {              
+          snprintf(buffer, sizeof(buffer),"%lu: %s: %u", millis(), xMessage.msg, xMessage.value);
+          Serial.println(buffer);
+
+          // Task dispatch 
           if (xMessage.sender == Task1) {}
           if (xMessage.sender == Task2) {}
           if (xMessage.sender == Task3) {}        
           if (xMessage.sender == xUART) {}
           if (xMessage.sender == xUDP)  {} // Update remote dashboard and itself
           if (xMessage.sender == xCAN)  {} // Read data from CAN bus and UDP to remote dashboard.             
-      } 
+      } else {
+          Serial.println("IPC Queue Failed!");
+      }
     }
 }
 #endif
@@ -76,7 +101,7 @@ void vAppTsk1( void *pvParameters )
   {
     // Write application process here:
     RS232tx("Hello world");
-    delay(500);
+    vTaskDelay(pdMS_TO_TICKS(500));
     RS232rx();
 
     // Send received data to the message box if needed
@@ -105,7 +130,7 @@ void vAppTsk2( void *pvParameters )
   {
     // Write application process here
     readUDP();
-    delay(500);
+    vTaskDelay(pdMS_TO_TICKS(500));
     writeUDP(WindowsIP, WindowsPort, replyBuffer);
 
     // Send received data to the message box if needed
@@ -138,7 +163,7 @@ void vAppTsk3( void *pvParameters )
   {
     // Write application process here
     readCAN();
-    delay(500);
+    vTaskDelay(pdMS_TO_TICKS(500));
     writeCAN(canid, id29bit, TWAI_FRAME_MAX_DLC, payload);
     
     // Send received data to the message box if needed
@@ -158,10 +183,10 @@ void setup()
   Serial.println("Setup started.");
 
 #if USE_TASK_MBOX
-  xQueue = xQueueCreate(10, sizeof(Data_t)); 
+  xQueue = xQueueCreate(50, sizeof(Data_t)); 
   if (xQueue != NULL) 
   {   // higher priority may starve loop
-    xTaskCreatePinnedToCore(vPrintTsk, "PrintTask", 2048, NULL, 2, &hPrintTsk, app_cpu); 
+    xTaskCreatePinnedToCore(vPrintTsk, "PrintTask", 2048, NULL, 2, &hPrintTsk, drv_cpu); 
   }
 #endif
 
@@ -182,8 +207,9 @@ void setup()
 #if USE_RTOS_TASK
     // TASK: add task handlers to place tasks on block during file upload and fw update.
     xTaskCreatePinnedToCore(vAppTsk1, "AppTsk1", 2048, NULL, 3, &hAppTsk1, app_cpu);
-    xTaskCreatePinnedToCore(vAppTsk2, "AppTsk1", 2048, NULL, 3, &hAppTsk2, app_cpu);
-    xTaskCreatePinnedToCore(vAppTsk3, "AppTsk1", 2048, NULL, 3, &hAppTsk3, app_cpu);
+    xTaskCreatePinnedToCore(vAppTsk2, "AppTsk2", 2048, NULL, 3, &hAppTsk2, app_cpu);
+    // Higher priority tasks here:
+    xTaskCreatePinnedToCore(vAppTsk3, "AppTsk3", 2048, NULL, 4, &hAppTsk3, drv_cpu);
 #endif
 
   // Time sensitive task

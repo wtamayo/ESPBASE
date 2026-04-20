@@ -225,7 +225,9 @@ void loop()
   mOTAreset();
   
 #if DEBUG_INFO
-  Serial.println("\n #" + String(millis()) + "\n");
+  char buffer[80];
+  snprintf(buffer, sizeof(buffer),"\n # %lu: "\n", millis());
+  Serial.println(buffer);
 #endif
 }
 

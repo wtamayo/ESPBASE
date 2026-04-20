@@ -12,6 +12,8 @@
 #define debugx(x, base)
 #endif
 
+/* 
+//Avoid delay() blocking calls 
 void hwTaskLED(void *pvParameters) 
 {
     while (1) 
@@ -23,6 +25,24 @@ void hwTaskLED(void *pvParameters)
       digitalWrite(BeatLed, LOW);
       delay(500);
     }
+}
+*/
+
+void hwTaskLED()
+{
+   TickType_t xLastWakeTime = xTaskGetTickCount();
+   const TickType_t xPeriod = pdMS_TO_TICKS(500);
+    // On Board LED heatbeat
+    pinMode(BeatLed, OUTPUT);
+
+   while(1) {  
+      digitalWrite(BeatLed, HIGH);
+      vTaskDelayUntil(&xLastWakeTime, xPeriod); 
+      digitalWrite(BeatLed, LOW);
+      vTaskDelayUntil(&xLastWakeTime, xPeriod);
+      //TODO: consider using toggle
+      //digitalWrite(BeatLed, !digitalRead(BeatLed));
+   }
 }
 
 void initUARTx()

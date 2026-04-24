@@ -12,7 +12,7 @@
 #define debugx(x, base)
 #endif
 
-/* 
+/*
 //Avoid delay() blocking calls 
 void hwTaskLED(void *pvParameters) 
 {
@@ -28,7 +28,7 @@ void hwTaskLED(void *pvParameters)
 }
 */
 
-void hwTaskLED()
+void hwTaskLED(void *pvParameters) 
 {
    TickType_t xLastWakeTime = xTaskGetTickCount();
    const TickType_t xPeriod = pdMS_TO_TICKS(500);
@@ -36,12 +36,13 @@ void hwTaskLED()
     pinMode(BeatLed, OUTPUT);
 
    while(1) {  
-      digitalWrite(BeatLed, HIGH);
-      vTaskDelayUntil(&xLastWakeTime, xPeriod); 
-      digitalWrite(BeatLed, LOW);
-      vTaskDelayUntil(&xLastWakeTime, xPeriod);
+      //digitalWrite(BeatLed, HIGH);
+      //vTaskDelayUntil(&xLastWakeTime, xPeriod); 
+      //digitalWrite(BeatLed, LOW);
+      //vTaskDelayUntil(&xLastWakeTime, xPeriod);
       //TODO: consider using toggle
-      //digitalWrite(BeatLed, !digitalRead(BeatLed));
+      digitalWrite(BeatLed, !digitalRead(BeatLed));
+      vTaskDelayUntil(&xLastWakeTime, xPeriod);
    }
 }
 

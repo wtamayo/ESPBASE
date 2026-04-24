@@ -62,7 +62,8 @@ void vPrintTsk( void *pvParameters )
     // Identify message source and place message on specific task's qeueue/struct
     while(1) 
     {     
-      if (xQueueReceive(xQueue, &xMessage, (TickType_t)1000) == pdPASS) 
+      //if (xQueueReceive(xQueue, &xMessage, (TickType_t)1000) == pdPASS) 
+      if (xQueueReceive(xQueue, &xMessage, portMAX_DELAY) == pdPASS) 
       {              
           snprintf(buffer, sizeof(buffer),"%lu: %s: %u", millis(), xMessage.msg, xMessage.value);
           Serial.println(buffer);
@@ -75,7 +76,7 @@ void vPrintTsk( void *pvParameters )
           if (xMessage.sender == xUDP)  {} // Update remote dashboard and itself
           if (xMessage.sender == xCAN)  {} // Read data from CAN bus and UDP to remote dashboard.             
       } else {
-          Serial.println("IPC Queue Failed!");
+          Serial.println("IPC Queue: No messages.");
       }
     }
 }
@@ -226,7 +227,7 @@ void loop()
   
 #if DEBUG_INFO
   char buffer[80];
-  snprintf(buffer, sizeof(buffer),"\n # %lu: "\n", millis());
+  snprintf(buffer, sizeof(buffer),"\n # %lu: \n", millis());
   Serial.println(buffer);
 #endif
 }

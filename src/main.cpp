@@ -37,6 +37,8 @@
 #define debugx(x, base)
 #endif
 
+SemaphoreHandle_t xSerialMutex;
+
 
 //#if CONFIG_FREERTOS_UNICORE
   static const BaseType_t drv_cpu = 0;
@@ -62,11 +64,15 @@ void vPrintTsk( void *pvParameters )
     // Identify message source and place message on specific task's qeueue/struct
     while(1) 
     {     
-      //if (xQueueReceive(xQueue, &xMessage, (TickType_t)1000) == pdPASS) 
       if (xQueueReceive(xQueue, &xMessage, portMAX_DELAY) == pdPASS) 
-      {              
-          snprintf(buffer, sizeof(buffer),"%lu: %s: %u", millis(), xMessage.msg, xMessage.value);
-          Serial.println(buffer);
+      {                        
+          snprintf(buffer, sizeof(buffer), "%lu: %s: %lu", millis(), xMessage.msg, (unsigned long)xMessage.value);
+
+          // Prevent pre-empting in the middle of a print use.
+          if (xSemaphoreTake(xSerialMutex, portMAX_DELAY)) {
+              Serial.println(buffer);
+              xSemaphoreGive(xSerialMutex);
+          }
 
           // Task dispatch 
           if (xMessage.sender == Task1) {}
@@ -75,9 +81,7 @@ void vPrintTsk( void *pvParameters )
           if (xMessage.sender == xUART) {}
           if (xMessage.sender == xUDP)  {} // Update remote dashboard and itself
           if (xMessage.sender == xCAN)  {} // Read data from CAN bus and UDP to remote dashboard.             
-      } else {
-          Serial.println("IPC Queue: No messages.");
-      }
+      } 
     }
 }
 #endif
@@ -106,8 +110,8 @@ void vAppTsk1( void *pvParameters )
     RS232rx();
 
     // Send received data to the message box if needed
-    xMessage.value = 2001;
-    xMessage.msg = "AppTask1";
+    xMessage.value = 2001;    
+    snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "AppTask1");
     xQueueSend(xQueue, &xMessage, (TickType_t)500);
     vTaskDelay(1000/ portTICK_RATE_MS);
   }
@@ -136,7 +140,7 @@ void vAppTsk2( void *pvParameters )
 
     // Send received data to the message box if needed
     xMessage.value = 2002;
-    xMessage.msg = "AppTask2";
+    snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "AppTask2");
     xQueueSend(xQueue, &xMessage, (TickType_t)500);
     vTaskDelay(1000/ portTICK_RATE_MS);
   }
@@ -169,7 +173,7 @@ void vAppTsk3( void *pvParameters )
     
     // Send received data to the message box if needed
     xMessage.value = 2003;
-    xMessage.msg = "AppTask3";
+    snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "AppTask3");
     xQueueSend(xQueue, &xMessage, (TickType_t)500);
     vTaskDelay(1000/ portTICK_RATE_MS);
   }
@@ -206,6 +210,8 @@ void setup()
   initWebServer();
 
 #if USE_RTOS_TASK
+    xSerialMutex = xSemaphoreCreateMutex();
+
     // TASK: add task handlers to place tasks on block during file upload and fw update.
     xTaskCreatePinnedToCore(vAppTsk1, "AppTsk1", 2048, NULL, 3, &hAppTsk1, app_cpu);
     xTaskCreatePinnedToCore(vAppTsk2, "AppTsk2", 2048, NULL, 3, &hAppTsk2, app_cpu);

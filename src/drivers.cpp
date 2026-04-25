@@ -82,7 +82,7 @@ int32_t RS232rx()
 #if USE_DRVR_MBOX 
   xMessage.sender = xUART;
   xMessage.value = 1000;
-  xMessage.msg = "RS232";
+  snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "RS232");
   xQueueSend(xQueue, &xMessage, (TickType_t)500);
 #endif
 
@@ -164,7 +164,7 @@ void mI2C()
 #if USE_DRVR_MBOX 
   xMessage.sender = xI2C;
   xMessage.value = 1001;
-  xMessage.msg = "I2C";
+  snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "I2C");
   xQueueSend(xQueue, &xMessage, (TickType_t)500);
 #endif
 }
@@ -246,7 +246,7 @@ uint64_t readCAN()
 #if USE_DRVR_MBOX 
   xMessage.sender = xCAN;
   xMessage.value = 1003;
-  xMessage.msg = "CANRx";
+  snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "CANRx");
   xQueueSend(xQueue, &xMessage, (TickType_t)500);
 #endif 
 

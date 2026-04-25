@@ -29,6 +29,8 @@ const float fwVersions[2] = {0.8,0};
 // Microseconds timers
 typedef uint64_t Timeoutus_t;
 
+// Protect shared serial print()
+
 // RTOS utils
 #define USE_TASK_MBOX   1
 #define USE_DRVR_MBOX   1
@@ -54,7 +56,7 @@ typedef enum {
 // Data places on the mailbox by devices
 typedef struct {
   int64_t value;
-  String msg;
+  char msg[50];
   DataSource_t sender;
 } Data_t;
 

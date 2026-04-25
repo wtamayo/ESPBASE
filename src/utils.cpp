@@ -103,3 +103,13 @@ bool deleteFileFS(const char* filePath)
   
   return false;
 }
+
+/* TODO
+void debugln(const char* string)
+{
+    if (xSemaphoreTake(xSerialMutex, portMAX_DELAY)) {
+        Serial.println(buffer);
+        xSemaphoreGive(xSerialMutex);
+    }
+}
+*/

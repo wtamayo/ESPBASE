@@ -1,32 +1,9 @@
 #include "drivers.h"
+#include "includes.h"
 
 #define DEBUG 0
 
-#if DEBUG
-#define debug(x) Serial.print(x);
-#define debugln(x) Serial.println(x);
-#define debugx(x, base) Serial.print(x, base);
-#else
-#define debug(x)
-#define debugln(x)
-#define debugx(x, base)
-#endif
-
-/*
-//Avoid delay() blocking calls 
-void hwTaskLED(void *pvParameters) 
-{
-    while (1) 
-    {
-      // On Board LED heatbeat
-      pinMode(BeatLed, OUTPUT);
-      digitalWrite(BeatLed, HIGH);
-      delay(500);
-      digitalWrite(BeatLed, LOW);
-      delay(500);
-    }
-}
-*/
+extern SemaphoreHandle_t xSerialMutex;
 
 void hwTaskLED(void *pvParameters) 
 {
@@ -36,11 +13,6 @@ void hwTaskLED(void *pvParameters)
     pinMode(BeatLed, OUTPUT);
 
    while(1) {  
-      //digitalWrite(BeatLed, HIGH);
-      //vTaskDelayUntil(&xLastWakeTime, xPeriod); 
-      //digitalWrite(BeatLed, LOW);
-      //vTaskDelayUntil(&xLastWakeTime, xPeriod);
-      //TODO: consider using toggle
       digitalWrite(BeatLed, !digitalRead(BeatLed));
       vTaskDelayUntil(&xLastWakeTime, xPeriod);
    }
@@ -56,11 +28,11 @@ void initUARTx()
 
 void initFwRevision() 
 {
-  Serial.println();
-  Serial.println("*************** AK Barge **************");  
-  Serial.println("        MCU Firmware Rev: " + String(fwVersions[0]));
-  Serial.println("        3CS Firmware Rev: " + String(fwVersions[1]));
-  Serial.println("***************************************");
+  logf("\n");
+  logf("*************** AK Barge ************** \n");  
+  logf("        MCU Firmware Rev: %c \n", String(fwVersions[0]));
+  logf("        3CS Firmware Rev: %c \n", String(fwVersions[1]));
+  logf("*************************************** \n");
 }
 
 
@@ -94,7 +66,10 @@ int32_t RS232rx()
 void RS232tx(const char* msg)
 {
   // Process RS-232 data   
-  SerialRS232.print(msg);
+  if (xSemaphoreTake(xSerialMutex, portMAX_DELAY)) {
+      SerialRS232.print(msg);
+      xSemaphoreGive(xSerialMutex);
+  }
 }
 
 
@@ -144,14 +119,14 @@ void mI2C()
     Wire.beginTransmission(I2C_DEV_ADDR);
     Wire.printf("%lu", i2cData);
     uint8_t error = Wire.endTransmission(true);
-    debugln("End I2C Tx: " + String(error));
+    logf("End I2C Tx: %c", error);
     i2cTx = !i2cTx; 
   } 
   else 
   {
     //Read 16 bytes from the slave
     uint8_t bytesReceived = Wire.requestFrom(I2C_DEV_ADDR, 32);
-    debugln("Request from I2C device: " + String(bytesReceived));
+    logf("Request from I2C device: %d", bytesReceived);
     if ((bool)bytesReceived) 
     {   //If received more than zero bytes
         uint8_t temp[bytesReceived];
@@ -196,21 +171,18 @@ void writeCAN(uint32_t CANID, idfSize_t sizeId, uint8_t dataLength, uint64_t pay
   }	
 	
   // Accepts both pointers and references 
-  debug(">Writting CAN ID: 0x");
-  debugx(txFrame.identifier, HEX);
-  debug("-->");
+  logf("\n >Writting CAN ID: 0x%x --> ", txFrame.identifier);
   
   for (int i=0; i<txFrame.data_length_code; i++) 
   {
-       debugx(txFrame.data[i], HEX);    
+       logHex(txFrame.data[i]);    
   }  
 
-  debugln();
 
   // timeout defaults to 1 ms
   if (ESP32Can.writeFrame(txFrame, 10) == false) 
   {
-      debugln(">CAN Tx Error");
+      logf("\n >CAN Tx Error");
   }     
 }
 
@@ -226,15 +198,14 @@ uint64_t readCAN()
   if (ESP32Can.readFrame(rxFrame, 100)) 
   {
       //uint16_t PNG = (rxFrame.identifier & 0x00FFFF00) >> 8;
-      debug("<Reading CAN ID: 0x");
-      debugx(rxFrame.identifier, HEX);
+      logf("<Reading CAN ID: 0x%x <--", rxFrame.identifier);
         
-      debug("<--");
       for (int i=0; i<rxFrame.data_length_code; i++) 
       {
-           debugx(rxFrame.data[i], HEX);
+           logHex(rxFrame.data[i]);
       }
-      debugln();
+      
+      logf("\n");
 
       // Filter only desired CAN IDs and assign value to data
       //debug("Payload data: 0x%X \r\n", rxFrame.data);

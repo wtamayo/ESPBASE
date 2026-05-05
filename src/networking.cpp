@@ -1,32 +1,19 @@
 #include "networking.h"
 
-#define DEBUG 0
-
-// Use debug whenever the message is not part of init
-#if DEBUG
-#define debug(x) Serial.print(x);
-#define debugln(x) Serial.println(x);
-#define debugx(x, base) Serial.print(x, base);
-#else
-#define debug(x)
-#define debugln(x)
-#define debugx(x, base)
-#endif
 
 /************* WIFI *************/ 
 
 void initWifiAP()
 {
-  WiFi.softAP(ssidAP, passwordAP);
-  Serial.print("WiFi Direct available at Access Point IP: ");
-  Serial.println(WiFi.softAPIP());
+  WiFi.softAP(ssidAP, passwordAP);  
+  logf("WiFi Direct available at Access Point IP: %c", WiFi.softAPIP());
 
   if (!MDNS.begin(host)) 
   {
-    Serial.println("Error setting up MDNS responder!");
+    logf("Error setting up MDNS responder! \n");
     while (1) delay(1000);
   }
-  Serial.println("mDNS responder started \n");  
+  logf("mDNS responder started \n");  
 }
 
 
@@ -35,37 +22,36 @@ boolean initWifiSTA()
   boolean result = false;
   unsigned long tStart = millis();
   // Start WiFi interface
-  WiFi.begin(ssid, password);                                                     
-  Serial.println("Trying to connet to WiFi with SSID: " + String(ssid));    
+  WiFi.begin(ssid, password);                                                      
+  logf("Trying to connet to WiFi with SSID: %c", ssid);
     
   // Wait until WiFi is connected, but quit in 10 sec if no LAN found
   //timerCreateStart(timWifiSta, &hTimWifiSta, timOut10s);
   while (WiFi.status() != WL_CONNECTED && ((millis() - tStart) <= 10000)) 
   {   
-        delay(200);
-        Serial.print(".");
+        delay(200);    
+        logf(".");
   } 
 
   if (WiFi.status() != WL_CONNECTED) 
   {
-      Serial.println(" Unable to connet to " + String(ssid));        
+      //Serial.println(" Unable to connet to " + String(ssid));        
+      logf(" Unable to connet to %c", ssid);
   } 
   else 
   {
       // Show IP address that the ESP32 has received from router  
-      Serial.print(" Connected to LAN with IP address: ");
-      Serial.println(WiFi.localIP());
+      logf(" Connected to LAN with IP address: %c \n", WiFi.localIP());
 
       // Give device a hostname so webpage can be easier to access
       if (!MDNS.begin(hostname))
       {  
-          Serial.println("Error starting mDNS");
+          logf("Error starting mDNS \n");
           result = true;
       } 
       else 
       {
-          Serial.print( "Device available at " + String(hostname) + ".local / or LAN IP address: ");
-          Serial.println(WiFi.localIP()); 
+          logf("Device available at %c.local / or LAN IP address: ", hostname, WiFi.localIP());
       }
   }
   return result;
@@ -75,7 +61,7 @@ boolean initWifiSTA()
 // Time sensitive events
 void timoWifiSta_CallBack(void* arg) 
 {
-  debug("WiFi Station Timmed out");
+  logf("WiFi Station Timmed out \n");
   esp_timer_delete(*(esp_timer_handle_t *)arg); 
 }
 
@@ -89,7 +75,7 @@ void initEth()
   // Check for Ethernet hardware present
   if (Ethernet.hardwareStatus() == EthernetNoHardware) 
   {
-      Serial.println("Ethernet device not found. Can't run without hardware.");
+      logf("Ethernet device not found. Can't run without hardware. \n");
       netsta.enEth = error;
       return;
   } 
@@ -101,22 +87,19 @@ void initEth()
   if (Ethernet.linkStatus() == LinkON) 
   {
       netsta.enEth = connected;
-      Serial.print("Ethernet Started on Gateway: ");  
-      Serial.print(Ethernet.gatewayIP());
-      Serial.print(" and IP: ");
-      Serial.println(Ethernet.localIP());
+      logf("Ethernet Started on Gateway: %c, and IP: %c \n", Ethernet.gatewayIP(), Ethernet.localIP());
   } 
   else 
   {
-      Serial.println("Ethernet cable is not connected.");
+      //Serial.println("Ethernet cable is not connected.");
+      logf("Ethernet cable is not connected. \n");
       netsta.enEth = disconnected;
   }
 
   // start UDP
   udpRx.begin(localPort);
   udpTx.begin(remotePort);
-  Serial.print("UDP service on:");  
-  Serial.println(udpRx.localPort());
+  logf("UDP service on: %d", udpRx.localPort());
 
   // Give device a hostname so webpage can be easier to access
   // Not requiered - commented out.
@@ -140,27 +123,27 @@ uint64_t readUDP()
       
   if ((netsta.enEth == connected) && packetSize) 
   {
-      debug("<<Received UDP msg size ");
-      debug(packetSize);
-      debug("<--");
+      logf("<<Received UDP msg size %d <--", packetSize);
 
       // Identify remote IP
       remoteIP = udpRx.remoteIP();
       for (int i=0; i < 4; i++) 
       {
-           debug(remoteIP[i]);
-           if (i < 3) debug(".");
+           //debug(remoteIP[i]);
+           log(remoteIP[i]);
+           if (i < 3) {              
+              logf(".");
+           }             
       }
 
       // Identify remote port
-      debug(":");
+      logf(":");
       remotePort = udpRx.remotePort();
-      debug(remotePort);
+      logf("%d \n", remotePort);
 
       // read the packet into packetBuffer
-      udpRx.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
-      debug(", Payload: ");
-      debug(packetBuffer);
+      udpRx.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);      
+      logf(", Payload: %d", packetBuffer);
 
 #if USE_HAL_MBOX
        // Send received data to the message box
@@ -177,24 +160,26 @@ uint64_t readUDP()
 void writeUDP(IPAddress remoteIP, uint16_t remotePort, const char* tBuffer) 
 {
       // send a reply to the IP address and port that sent us the packet we received
-      debug(">>" + localIP.toString() + ":" + localPort);
-      debug("-->UDP msg to: ");
-      debug(remoteIP.toString());
-      debug(":");
-      debug(remotePort);
-      debug(", Payload: ");
-      debugln(tBuffer);
+      //debug(">>" + localIP.toString() + ":" + localPort);
+      //debug("-->UDP msg to: ");
+      //debug(remoteIP.toString());
+      //debug(":");
+      //debug(remotePort);
+      //debug(", Payload: ");
+      //debugln(tBuffer);
+
+      logf(">> %c:%d -->UDP msg to: %c:%d, Payload: %c \n", localIP.toString(), localPort, remoteIP.toString(), remotePort, tBuffer);
       
       if (!udpTx.beginPacket(remoteIP, remotePort)) 
       {
-          debugln(">>Remote IP/Port Error");
+          logf(">>Remote IP/Port Error");
       } 
 
       udpTx.write(tBuffer);
 
       if (!udpTx.endPacket()) 
-      {
-          debugln(">>UDP Rx Error");
+      {          
+          logf(">>UDP Rx Error \n");
       }
 }
  

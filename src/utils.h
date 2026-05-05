@@ -6,6 +6,7 @@
 /************* File Locations *************/
 #define MAX_FILE_SIZE  1048576           // 1MB = 1048576
 
+
 static const char *fLogin  = "/server/login.html";
 static const char *fIndex = "/server/index.html";
 static const char *fUpdate = "/server/update.html";
@@ -21,5 +22,12 @@ void readFileFS(const char* filename);
 bool deleteFileFS(const char* filePath);
 void suspendTasks();
 void resumeTasks();
+
+// Log/debug/print
+void log(char* msg);
+void logln(char* msg);
+void logHex(uint32_t msg);
+void logf(const char* fmt, ...);
+
 
 #endif

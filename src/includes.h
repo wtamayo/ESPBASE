@@ -29,13 +29,11 @@ const float fwVersions[2] = {0.8,0};
 // Microseconds timers
 typedef uint64_t Timeoutus_t;
 
-// Protect shared serial print()
-
 // RTOS utils
 #define USE_TASK_MBOX   1
 #define USE_DRVR_MBOX   1
 #define USE_RTOS_TASK   1
-#define DEBUG_INFO      0
+#define printout_INFO      0
 
 // Timeouts
 #define WATCHDOG_TIMEOUT        5        // In seconds

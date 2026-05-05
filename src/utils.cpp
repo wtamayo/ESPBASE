@@ -1,18 +1,9 @@
 #include "utils.h"
+#include <cstdarg>
+#include <stdio.h>
 
-#define DEBUG 1
 
-// Use debug whenever the message is not part of init
-#if DEBUG
-#define debug(x) Serial.print(x);
-#define debugln(x) Serial.println(x);
-#define debugx(x, base) Serial.print(x, base);
-#else
-#define debug(x)
-#define debugln(x)
-#define debugx(x, base)
-#endif
-
+SemaphoreHandle_t xSerialMutex;
 
 void timerCreateStart(esp_timer_create_args_t timerEvent, esp_timer_handle_t* hTimer, Timeoutus_t tout) 
 {
@@ -61,22 +52,23 @@ void readFileFS(const char* filename)
   int size = file.size();
   size_t bytesRead = 0;
 
-  debugln("Reading flashed file:" + String(filename) + " of size:" + String(size));
+  logf("Reading flashed file: %c of size: %d", filename, size);
 
   if (!file) 
   {
-      debugln("could not open file for reading");
+      logf("could not open file for reading \n");
   } 
   else 
   {      
       while (file.available()) 
       {             
-          //Serial.printf("%X ", file.read());         // Process file here CAN/UDP    
-          debugx(file.read(), HEX);
+          //logf("%X ", file.read());         // Process file here CAN/UDP    
+          logHex(file.read());
           bytesRead++;             
           // yield();
       }
-      debugln("Amount of data in file:" + String(bytesRead));    
+      
+      logf("Amount of data in file: %c \n", bytesRead);    
       file.close();
   }
 }
@@ -88,28 +80,55 @@ bool deleteFileFS(const char* filePath)
   {    
       if (LittleFS.remove(filePath)) 
       {
-          debugln("File deleted successfully");
+          logf("File deleted successfully \n");
           return true;
       } 
       else 
       {
-          debugln("Failed to delete the file.");
+          logf("Failed to delete the file. \n");
       }
   } 
   else 
   {
-      debugln("File does not exist.");
+      logf("File does not exist. \n");
   }
   
   return false;
 }
 
-/* TODO
-void debugln(const char* string)
+
+void log(char* msg) 
 {
     if (xSemaphoreTake(xSerialMutex, portMAX_DELAY)) {
-        Serial.println(buffer);
-        xSemaphoreGive(xSerialMutex);
+      Serial.print(msg);
+      xSemaphoreGive(xSerialMutex);
     }
 }
-*/
+
+void logln(char* msg) 
+{
+    if (xSemaphoreTake(xSerialMutex, portMAX_DELAY)) {
+      Serial.println(msg);
+      xSemaphoreGive(xSerialMutex);
+    }
+}
+
+void logHex(uint32_t msg) 
+{
+    if (xSemaphoreTake(xSerialMutex, portMAX_DELAY)) {
+      Serial.print(msg, HEX);
+      xSemaphoreGive(xSerialMutex);
+    }
+}
+
+void logf(const char* fmt, ...)
+{
+    char buffer[128];
+
+    va_list args;
+    va_start(args, fmt);                 // start reading args
+    vsnprintf(buffer, sizeof(buffer), fmt, args);  // format string
+    va_end(args);                        // cleanup
+
+    Serial.print(buffer);
+}

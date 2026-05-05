@@ -9,13 +9,10 @@
  *  
  *  All tasks send messages to a central mailbox (queue)
  *  A dispatcher task (vPrintTsk) receives and processes/logs messages
- *  This is basically a producer → queue → consumer pattern
+ *  This is a producer → queue → consumer pattern
  * 
- * 
- *
  ***************************************************************************************
  */
-
 #include "includes.h"
 #include "utils.h"
 #include "drivers.h"
@@ -25,20 +22,9 @@
 #include "freertos/ringbuf.h"
 #include "freertos/task.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
-#if DEBUG
-#define debug(x) Serial.print(x);
-#define debugln(x) Serial.println(x);
-#define debugx(x, base) Serial.print(x, base);
-#else
-#define debug(x)
-#define debugln(x)
-#define debugx(x, base)
-#endif
-
-SemaphoreHandle_t xSerialMutex;
-
+extern SemaphoreHandle_t xSerialMutex;
 
 //#if CONFIG_FREERTOS_UNICORE
   static const BaseType_t drv_cpu = 0;
@@ -59,20 +45,22 @@ TaskHandle_t hPrintTsk = NULL;
 void vPrintTsk( void *pvParameters ) 
 {
     Data_t xMessage;    
-    char buffer[80];
+    //char buffer[80];
 
     // Identify message source and place message on specific task's qeueue/struct
     while(1) 
     {     
       if (xQueueReceive(xQueue, &xMessage, portMAX_DELAY) == pdPASS) 
       {                        
-          snprintf(buffer, sizeof(buffer), "%lu: %s: %lu", millis(), xMessage.msg, (unsigned long)xMessage.value);
+          //snprintf(buffer, sizeof(buffer), "%lu: %s: %lu", millis(), xMessage.msg, (unsigned long)xMessage.value);
 
           // Prevent pre-empting in the middle of a print use.
-          if (xSemaphoreTake(xSerialMutex, portMAX_DELAY)) {
-              Serial.println(buffer);
-              xSemaphoreGive(xSerialMutex);
-          }
+          //if (xSemaphoreTake(xSerialMutex, portMAX_DELAY)) {
+          //    Serial.println(buffer);
+          //    xSemaphoreGive(xSerialMutex);
+          //}
+
+          logf("\n %lu: %s: %lu", millis(), xMessage.msg, (unsigned long)xMessage.value);
 
           // Task dispatch 
           if (xMessage.sender == Task1) {}
@@ -184,8 +172,8 @@ void vAppTsk3( void *pvParameters )
 void setup() 
 {
   Serial.begin(460800);
-  delay(1000);
-  Serial.println("Setup started.");
+  delay(1000);  
+  logf("Setup started. \n");
 
 #if USE_TASK_MBOX
   xQueue = xQueueCreate(50, sizeof(Data_t)); 
@@ -231,10 +219,8 @@ void loop()
   mWebServer();
   mOTAreset();
   
-#if DEBUG_INFO
-  char buffer[80];
-  snprintf(buffer, sizeof(buffer),"\n # %lu: \n", millis());
-  Serial.println(buffer);
+#if DEBUG_INFO  
+  logf("\n # %lu: \n", millis());
 #endif
 }
 

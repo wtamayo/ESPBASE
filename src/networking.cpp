@@ -116,7 +116,7 @@ void initEth()
 // Check the UDP Rx buffer for any data. 
 uint64_t readUDP()
 {
-  uint64_t data;
+  uint64_t data = 0;
 
   // if there's data available, read a packet
   int packetSize = udpRx.parsePacket();       
@@ -160,14 +160,6 @@ uint64_t readUDP()
 void writeUDP(IPAddress remoteIP, uint16_t remotePort, const char* tBuffer) 
 {
       // send a reply to the IP address and port that sent us the packet we received
-      //debug(">>" + localIP.toString() + ":" + localPort);
-      //debug("-->UDP msg to: ");
-      //debug(remoteIP.toString());
-      //debug(":");
-      //debug(remotePort);
-      //debug(", Payload: ");
-      //debugln(tBuffer);
-
       logf(">> %c:%d -->UDP msg to: %c:%d, Payload: %c \n", localIP.toString(), localPort, remoteIP.toString(), remotePort, tBuffer);
       
       if (!udpTx.beginPacket(remoteIP, remotePort)) 

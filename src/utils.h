@@ -2,6 +2,9 @@
 #define _UTILS_H_
 
 #include "includes.h"
+#include <LittleFS.h> 
+#include <FS.h>
+
 
 /************* File Locations *************/
 #define MAX_FILE_SIZE  1048576           // 1MB = 1048576

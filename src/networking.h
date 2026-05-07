@@ -3,6 +3,13 @@
 
 #include "includes.h"
 #include "utils.h"
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <Ethernet.h>
+#include <EthernetUdp.h>
+#include <ESPmDNS.h>
+#include <SPI.h>
+
 
 static const char* host = "AKBarge";
 static const char* ssidAP = "AKBarge";

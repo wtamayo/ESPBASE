@@ -52,13 +52,6 @@ void vPrintTsk( void *pvParameters )
     {     
       if (xQueueReceive(xQueue, &xMessage, portMAX_DELAY) == pdPASS) 
       {                        
-          //snprintf(buffer, sizeof(buffer), "%lu: %s: %lu", millis(), xMessage.msg, (unsigned long)xMessage.value);
-
-          // Prevent pre-empting in the middle of a print use.
-          //if (xSemaphoreTake(xSerialMutex, portMAX_DELAY)) {
-          //    Serial.println(buffer);
-          //    xSemaphoreGive(xSerialMutex);
-          //}
 
           logf("\n %lu: %s: %lu", millis(), xMessage.msg, (unsigned long)xMessage.value);
 
@@ -212,6 +205,7 @@ void setup()
 
 }
 
+
 // RTOS priority 1 manage background processes.
 void loop() 
 {
@@ -223,4 +217,5 @@ void loop()
   logf("\n # %lu: \n", millis());
 #endif
 }
+
 

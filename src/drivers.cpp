@@ -40,13 +40,13 @@ void initFwRevision()
 int32_t RS232rx()
 {
   Data_t xMessage;
-  int32_t data;
+  int32_t data = 0;
   char rxBuffer[32]; 
   
   if (SerialRS232.available() > 0)
   {
     SerialRS232.readBytes(rxBuffer, sizeof(rxBuffer));
-    // data = rxBuffer[0];
+    data = rxBuffer[0];
 
     // Interrupt based HW can send rx data to the message box
   }
@@ -170,19 +170,17 @@ void writeCAN(uint32_t CANID, idfSize_t sizeId, uint8_t dataLength, uint64_t pay
       txFrame.data[index] = *pByte;               
   }	
 	
-  // Accepts both pointers and references 
-  logf("\n >Writting CAN ID: 0x%x --> ", txFrame.identifier);
+  // Build hex string with only actual data length
+  char hexBuf[32] = {0};
+  for (int i = 0; i < txFrame.data_length_code; i++) {
+      snprintf(hexBuf + (i*3), sizeof(hexBuf) - (i*3), "%02X ", txFrame.data[i]);
+  }
+  logf("\n\n> Writting CAN ID: 0x%x --> %s\n", txFrame.identifier, hexBuf);
   
-  for (int i=0; i<txFrame.data_length_code; i++) 
-  {
-       logHex(txFrame.data[i]);    
-  }  
-
-
   // timeout defaults to 1 ms
   if (ESP32Can.writeFrame(txFrame, 10) == false) 
   {
-      logf("\n >CAN Tx Error");
+      logf("> CAN Tx Error \n");
   }     
 }
 
@@ -198,14 +196,11 @@ uint64_t readCAN()
   if (ESP32Can.readFrame(rxFrame, 100)) 
   {
       //uint16_t PNG = (rxFrame.identifier & 0x00FFFF00) >> 8;
-      logf("<Reading CAN ID: 0x%x <--", rxFrame.identifier);
-        
-      for (int i=0; i<rxFrame.data_length_code; i++) 
-      {
-           logHex(rxFrame.data[i]);
+      char hexBuf[32] = {0};
+      for (int i = 0; i < rxFrame.data_length_code; i++) {
+          snprintf(hexBuf + (i*3), sizeof(hexBuf) - (i*3), "%02X ", rxFrame.data[i]);
       }
-      
-      logf("\n");
+      logf("\n\n> Reading CAN ID: 0x%x --> %s\n", rxFrame.identifier, hexBuf);
 
       // Filter only desired CAN IDs and assign value to data
       //debug("Payload data: 0x%X \r\n", rxFrame.data);

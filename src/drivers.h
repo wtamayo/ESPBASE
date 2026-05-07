@@ -1,8 +1,13 @@
 #ifndef _DRIVERS_H_
 #define _DRIVERS_H_
 
+#include <Wire.h>
+#include <SPI.h>
+#include <ESP32-TWAI-CAN.hpp>
+#include <HardwareSerial.h>
 #include "includes.h"
 #include "utils.h"
+
 
 /******* Hardware Defines *******/ 
 #define BeatLed LED_BUILTIN
@@ -10,14 +15,14 @@
 // Serial RS-232
 static HardwareSerial SerialRS232(1);
 
+// Select pin nomenclature based on build
+// Serial
 #define RX_PIN D7        // GPIO_NUM_44
 #define TX_PIN D6        // GPIO_NUM_43
-#define BAUD 115200
 
 // CAN/SPI Pins
 #define CAN_TX		D3   // GPIO_NUM_4
 #define CAN_RX		D2   // GPIO_NUM_3
-#define CAN_SPEED   500
 
 // Xiao SPI PIN remapping SCK, MISO, MOSI, SS
 #define SCK_PIN     D8    // GPIO_NUM_7  
@@ -25,6 +30,9 @@ static HardwareSerial SerialRS232(1);
 #define MOSI_PIN    D10   // GPIO_NUM_9  
 #define SS_PIN      D0    // GPIO_NUM_1  
 
+
+#define BAUD 115200
+#define CAN_SPEED   500
 static const int spiClk = 1000000; 
 
 // I2C Device(s)

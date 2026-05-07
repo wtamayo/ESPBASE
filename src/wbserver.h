@@ -1,6 +1,10 @@
 #ifndef _WEBSERVER_H_
 #define _WEBSERVER_H_
 
+#include <WebServer.h>
+#include <LittleFS.h> 
+#include <Update.h>
+#include <aWOT.h>
 #include "includes.h"
 #include "utils.h"
 

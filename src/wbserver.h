@@ -20,6 +20,15 @@ static bool shouldRestart = false;
 
 static bool newFile = true;
 
+/************* File Locations *************/
+#define MAX_FILE_SIZE  1048576           // 1MB = 1048576
+
+static const char *fLogin  = "/server/login.html";
+static const char *fIndex = "/server/index.html";
+static const char *fUpdate = "/server/update.html";
+static const char *fUpload = "/server/upload.html";
+static const char *fSave = "/user/ufile.hex";
+
 //void update(Request &req, Response &res);
 void initWebServer();
 

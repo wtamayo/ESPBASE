@@ -9,6 +9,9 @@
 ## Conventions
 - Use camelCase for variables
 
+## Documents
+- docs\ MCU, sensors, board specifications.
+
 ## key files
 - src\main.cpp - entry point
 - src\drivers.cpp - IIC, CAN, RS232, UART, LED, SPI, GPIO definitions

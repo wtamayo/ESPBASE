@@ -45,15 +45,14 @@ TaskHandle_t hPrintTsk = NULL;
 void vPrintTsk( void *pvParameters ) 
 {
     Data_t xMessage;    
-    //char buffer[80];
 
     // Identify message source and place message on specific task's qeueue/struct
     while(1) 
     {     
       if (xQueueReceive(xQueue, &xMessage, portMAX_DELAY) == pdPASS) 
       {                        
-
-          logf("\n %lu: %s: %lu", millis(), xMessage.msg, (unsigned long)xMessage.value);
+          
+          logf("\n %lu: %s: %lu", esp_log_timestamp(), xMessage.msg, (unsigned long)xMessage.value);
 
           // Task dispatch 
           if (xMessage.sender == Task1) {}
@@ -166,13 +165,13 @@ void setup()
 {
   Serial.begin(460800);
   delay(1000);  
-  logf("Setup started. \n");
+  xSerialMutex = xSemaphoreCreateMutex();
 
 #if USE_TASK_MBOX
   xQueue = xQueueCreate(50, sizeof(Data_t)); 
   if (xQueue != NULL) 
   {   // higher priority may starve loop
-    xTaskCreatePinnedToCore(vPrintTsk, "PrintTask", 2048, NULL, 2, &hPrintTsk, drv_cpu); 
+      xTaskCreatePinnedToCore(vPrintTsk, "PrintTask", 4096, NULL, 2, &hPrintTsk, drv_cpu); 
   }
 #endif
 
@@ -191,17 +190,17 @@ void setup()
   initWebServer();
 
 #if USE_RTOS_TASK
-    xSerialMutex = xSemaphoreCreateMutex();
-
     // TASK: add task handlers to place tasks on block during file upload and fw update.
-    xTaskCreatePinnedToCore(vAppTsk1, "AppTsk1", 2048, NULL, 3, &hAppTsk1, app_cpu);
-    xTaskCreatePinnedToCore(vAppTsk2, "AppTsk2", 2048, NULL, 3, &hAppTsk2, app_cpu);
-    // Higher priority tasks here:
-    xTaskCreatePinnedToCore(vAppTsk3, "AppTsk3", 2048, NULL, 4, &hAppTsk3, drv_cpu);
+    xTaskCreatePinnedToCore(vAppTsk1, "AppTsk1", 4096, NULL, 3, &hAppTsk1, app_cpu);
+    xTaskCreatePinnedToCore(vAppTsk2, "AppTsk2", 4096, NULL, 3, &hAppTsk2, app_cpu);
+    // Higher priority tasks here: CAN
+    xTaskCreatePinnedToCore(vAppTsk3, "AppTsk3", 4096, NULL, 4, &hAppTsk3, drv_cpu);
 #endif
 
   // Time sensitive task
   xTaskCreate(hwTaskLED,"LEDTask", 2048, NULL, 1, NULL);
+
+  logf("Setup Completed. \n");
 
 }
 
@@ -211,7 +210,7 @@ void loop()
 {
   mEthernet();
   mWebServer();
-  mOTAreset();
+  //mOTAreset();
   
 #if DEBUG_INFO  
   logf("\n # %lu: \n", millis());

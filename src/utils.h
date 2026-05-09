@@ -17,7 +17,6 @@ void resumeTasks();
 
 // Log/debug/print
 void log(char* msg);
-void logln(char* msg);
 void logHex(uint32_t msg);
 void logf(const char* fmt, ...);
 

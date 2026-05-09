@@ -14,7 +14,7 @@ void hwTaskLED(void *pvParameters)
 
    while(1) {  
       digitalWrite(BeatLed, !digitalRead(BeatLed));
-      vTaskDelayUntil(&xLastWakeTime, xPeriod);
+      vTaskDelayUntil(&xLastWakeTime, xPeriod);        
    }
 }
 
@@ -81,16 +81,16 @@ void initSPI()
   pinMode(SPI.pinSS(),OUTPUT);
 
 #if DEBUG_SPI
-  debug("MOSI: ");
-  debugln(MOSI);
-  debug("MISO: ");
-  debugln(MISO);
-  debug("SCK: ");
-  debugln(SCK);
-  debug("SS: ");
-  debugln(SS); 
-  debug("SPI SS: GPIO");
-  debugln(SPI.pinSS());
+  log("MOSI: ");
+  log("%d \n", MOSI);
+  log("MISO: ");
+  log("%d \n", MISO);
+  log("SCK: ");
+  log("%d \n", SCK);
+  log("SS: ");
+  log("%d \n", SS); 
+  log("SPI SS: GPIO");
+  log("%d \n", SPI.pinSS());
 #endif    
 }
 
@@ -170,18 +170,23 @@ void writeCAN(uint32_t CANID, idfSize_t sizeId, uint8_t dataLength, uint64_t pay
       txFrame.data[index] = *pByte;               
   }	
 	
-  // Build hex string with only actual data length
+  // Single logf call to prevent corrupting UART buffer on context switch
+  char canLog[96] = {0};
   char hexBuf[32] = {0};
+
   for (int i = 0; i < txFrame.data_length_code; i++) {
       snprintf(hexBuf + (i*3), sizeof(hexBuf) - (i*3), "%02X ", txFrame.data[i]);
   }
-  logf("\n\n> Writting CAN ID: 0x%x --> %s\n", txFrame.identifier, hexBuf);
-  
-  // timeout defaults to 1 ms
-  if (ESP32Can.writeFrame(txFrame, 10) == false) 
-  {
-      logf("> CAN Tx Error \n");
-  }     
+
+  bool txOk = ESP32Can.writeFrame(txFrame, 10);
+
+  snprintf(canLog, sizeof(canLog), "\n\n> Writting CAN ID: 0x%x --> %s%s\n",
+           txFrame.identifier,
+           hexBuf,
+           txOk ? "" : "\n> CAN Tx Error");
+
+  // single mutex lock, single flush, atomic output     
+  logf("%s", canLog);   
 }
 
 
@@ -196,7 +201,7 @@ uint64_t readCAN()
   if (ESP32Can.readFrame(rxFrame, 100)) 
   {
       //uint16_t PNG = (rxFrame.identifier & 0x00FFFF00) >> 8;
-      char hexBuf[32] = {0};
+      char hexBuf[256] = {0};
       for (int i = 0; i < rxFrame.data_length_code; i++) {
           snprintf(hexBuf + (i*3), sizeof(hexBuf) - (i*3), "%02X ", rxFrame.data[i]);
       }
@@ -228,11 +233,11 @@ void initCAN()
   // It is also safe to use .begin() without .end() as it calls it internally
   if (ESP32Can.begin(ESP32Can.convertSpeed(CAN_SPEED), CAN_TX, CAN_RX, 10, 10)) 
   {
-      Serial.println("CAN bus started");
+      logf("CAN bus started \n");
   } 
   else 
   {
-      Serial.println("CAN bus failed");
+      logf("CAN bus failed \n");
   }
 }
 

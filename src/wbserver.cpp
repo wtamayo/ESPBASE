@@ -2,17 +2,6 @@
 
 #define DEBUG 1
 
-// Use debug whenever the message is not part of init
-#if DEBUG
-#define debug(x) Serial.print(x);
-#define debugln(x) Serial.println(x);
-#define debugx(x, base) Serial.print(x, base);
-#else
-#define debug(x)
-#define debugln(x)
-#define debugx(x, base)
-#endif
-
 
 void hServerLogin() 
 {
@@ -20,7 +9,7 @@ void hServerLogin()
   // inline read file
   File file = LittleFS.open(fLogin, "r");
   if (!file) {
-    debugln("could not open file for reading");
+    logf("could not open file for reading");
   } else {
     while (file.available()) {      
       server.send(200, "text/html", file.readString());         
@@ -36,7 +25,7 @@ void hServerIndex()
   // inline read file
   File file = LittleFS.open(fIndex, "r");
   if (!file) {
-    debugln("could not open file for reading");
+    logf("could not open file for reading \n");
   } else {
     while (file.available()) {      
       server.send(200, "text/html", file.readString());         
@@ -51,7 +40,7 @@ void hServerUpdate()
    // inline read file
   File file = LittleFS.open(fUpdate, "r");
   if (!file) {
-    debugln("could not open file for reading");
+    logf("could not open file for reading \n");
   } else {
     while (file.available()) {      
       server.send(200, "text/html", file.readString());         
@@ -100,7 +89,7 @@ void hServerUpload()
    // inline read file
   File file = LittleFS.open(fUpload, "r");
   if (!file) {
-    debugln("could not open file for reading");
+    logf("could not open file for reading \n");
   } else {
     while (file.available()) {      
       server.send(200, "text/html", file.readString());         
@@ -128,21 +117,21 @@ void hServerUploadStart()
   File file = LittleFS.open(fSave, "a");
   
   if (!file) {
-      debugln("could not open file for writting");
+      logf("could not open file for writting \n");
       return;
   }
   
   if (upload.status == UPLOAD_FILE_START) {
-      debugln("Uploading: " + String(upload.filename));
+      logf("Uploading: %s \n", upload.filename.c_str());
   } else if (upload.status == UPLOAD_FILE_WRITE) {
       // The actual usefull data in the file will be upload.totalSize
       int bufferSize = sizeof(upload.buf);
       fStreamTotal += bufferSize;
 
       // Dont try to write beyond available file size.
-      if (fStreamTotal >= MAX_FILE_SIZE) {
-          debugln("Upload file size " + String(fStreamSize) + " larger than flash space " + String(MAX_FILE_SIZE));          
-          debugln("Deleting truncated file:" + String(upload.filename));
+      if (fStreamTotal >= MAX_FILE_SIZE) {                  
+          logf("Upload file size %d larger than flash space %d \n", fStreamSize, MAX_FILE_SIZE);
+          logf("Deleting truncated file: %s \n", upload.filename.c_str());
           newFile = true;
           fStreamSize = 0; 
           fStreamTotal = 0;
@@ -155,10 +144,10 @@ void hServerUploadStart()
           memset(upload.buf, '\0', sizeof(upload.buf));          
       }
 
-      debugln("Upload buffer written to file, file size: " + String(fStreamSize));
+      logf("Upload buffer written to file, file size: %d", fStreamSize);
 
   } else if (upload.status == UPLOAD_FILE_END) {
-      debugln("Upload completed: " + String(fStreamSize) + " size");
+      logf("Upload completed: %d size \n", fStreamSize);
       newFile = true;
       fStreamSize = 0;   
       fStreamTotal = 0;          

@@ -128,9 +128,8 @@ uint64_t readUDP()
       // Identify remote IP
       remoteIP = udpRx.remoteIP();
       for (int i=0; i < 4; i++) 
-      {
-           //debug(remoteIP[i]);
-           log(remoteIP[i]);
+      {           
+           logf("%d", remoteIP[i]);
            if (i < 3) {              
               logf(".");
            }             
@@ -160,7 +159,7 @@ uint64_t readUDP()
 void writeUDP(IPAddress remoteIP, uint16_t remotePort, const char* tBuffer) 
 {
       // send a reply to the IP address and port that sent us the packet we received
-      logf(">> %c:%d -->UDP msg to: %c:%d, Payload: %c \n", localIP.toString(), localPort, remoteIP.toString(), remotePort, tBuffer);
+      logf(">> %s:%d -->UDP msg to: %s:%d, Payload: %s \n", localIP.toString(), localPort, remoteIP.toString(), remotePort, tBuffer);
       
       if (!udpTx.beginPacket(remoteIP, remotePort)) 
       {

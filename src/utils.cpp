@@ -105,13 +105,6 @@ void log(char* msg)
     }
 }
 
-void logln(char* msg) 
-{
-    if (xSemaphoreTake(xSerialMutex, portMAX_DELAY)) {
-      Serial.println(msg);
-      xSemaphoreGive(xSerialMutex);
-    }
-}
 
 void logHex(uint32_t msg) 
 {
@@ -121,14 +114,22 @@ void logHex(uint32_t msg)
     }
 }
 
+// Thread safe generic print function
 void logf(const char* fmt, ...)
 {
-    char buffer[128];
-
+    char buffer[512];
+            
     va_list args;
     va_start(args, fmt);                 // start reading args
     vsnprintf(buffer, sizeof(buffer), fmt, args);  // format string
     va_end(args);                        // cleanup
 
-    Serial.print(buffer);
+    if (xSerialMutex) {
+        if (xSemaphoreTake(xSerialMutex, portMAX_DELAY)) {
+            Serial.print(buffer);
+            xSemaphoreGive(xSerialMutex);
+        }
+    } else {
+        Serial.print(buffer);
+    }
 }

@@ -101,6 +101,7 @@ void log(char* msg)
 {
     if (xSemaphoreTake(xSerialMutex, portMAX_DELAY)) {
       Serial.print(msg);
+      Serial.flush();
       xSemaphoreGive(xSerialMutex);
     }
 }
@@ -110,6 +111,7 @@ void logHex(uint32_t msg)
 {
     if (xSemaphoreTake(xSerialMutex, portMAX_DELAY)) {
       Serial.print(msg, HEX);
+      Serial.flush();
       xSemaphoreGive(xSerialMutex);
     }
 }
@@ -127,9 +129,12 @@ void logf(const char* fmt, ...)
     if (xSerialMutex) {
         if (xSemaphoreTake(xSerialMutex, portMAX_DELAY)) {
             Serial.print(buffer);
+            Serial.flush();
             xSemaphoreGive(xSerialMutex);
         }
     } else {
         Serial.print(buffer);
+        Serial.flush();
     }
+    
 }

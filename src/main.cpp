@@ -85,7 +85,7 @@ void vAppTsk1( void *pvParameters )
   while(1) 
   {
     // Write application process here:
-    RS232tx("Hello world");
+    RS232tx("Hello world \n");
     vTaskDelay(pdMS_TO_TICKS(500));
     RS232rx();
 
@@ -164,6 +164,7 @@ void vAppTsk3( void *pvParameters )
 void setup() 
 {
   Serial.begin(460800);
+  Serial.setDebugOutput(true); 
   delay(1000);  
   xSerialMutex = xSemaphoreCreateMutex();
 

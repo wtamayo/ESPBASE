@@ -18,11 +18,11 @@ void hwTaskLED(void *pvParameters)
    }
 }
 
+// UART 0
 void initUARTx()
 {
   // Set UART for RS-232 interface
-  // Configure MySerial0 on pins TX=D6 and RX=D7 
-  SerialRS232.begin(BAUD, SERIAL_8N1,RX_PIN,TX_PIN);
+  SerialRS232.begin(RS232_BAUD, SERIAL_8N1,RS232_RX_PIN,RS232_TX_PIN);  
   SerialRS232.onReceive(RS232rx); 
 }
 
@@ -40,16 +40,15 @@ void initFwRevision()
 int32_t RS232rx()
 {
   Data_t xMessage;
-  int32_t data = 0;
-  char rxBuffer[32]; 
-  
-  if (SerialRS232.available() > 0)
-  {
-    SerialRS232.readBytes(rxBuffer, sizeof(rxBuffer));
-    data = rxBuffer[0];
+  char data = 0;
 
-    // Interrupt based HW can send rx data to the message box
+  // Drain entire UART1 buffer to prevent FIFO overflow
+  while (SerialRS232.available() > 0)
+  {
+    data = SerialRS232.read();  // Read all available bytes
   }
+
+  // Interrupt based HW can send rx data to the message box
 
 #if USE_DRVR_MBOX 
   xMessage.sender = xUART;
@@ -76,7 +75,7 @@ void RS232tx(const char* msg)
 void initSPI()
 {
   // Manual pin reasignment for Xiao - clk, miso, mosi, ss
-  SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, SS_PIN);
+  SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, GPIO_NUM_46);
   // Set Slave Select mode.
   pinMode(SPI.pinSS(),OUTPUT);
 
@@ -99,9 +98,9 @@ void spiCommand(byte data)
 {
   //use it as you would the regular arduino SPI API
   SPI.beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE0));
-  digitalWrite(SPI.pinSS(), LOW);   //pull SS slow to prep other end for transfer
+  digitalWrite(SPI.pinSS(), LOW);   //pull SS slow to prep other end for transfer (commented out, hardwired)
   SPI.transfer(data);
-  digitalWrite(SPI.pinSS(), HIGH);  //pull ss high to signify end of data transfer
+  digitalWrite(SPI.pinSS(), HIGH);  //pull ss high to signify end of data transfer (commented out, hardwired)
   SPI.endTransaction();
 }
 
@@ -205,18 +204,18 @@ uint64_t readCAN()
       for (int i = 0; i < rxFrame.data_length_code; i++) {
           snprintf(hexBuf + (i*3), sizeof(hexBuf) - (i*3), "%02X ", rxFrame.data[i]);
       }
-      logf("\n\n> Reading CAN ID: 0x%x --> %s\n", rxFrame.identifier, hexBuf);
+      logf("\n\n< Reading CAN ID: 0x%x --> %s\n", rxFrame.identifier, hexBuf);
 
       // Filter only desired CAN IDs and assign value to data
       //debug("Payload data: 0x%X \r\n", rxFrame.data);
-      //if(rxFrame.identifier == 0x7E8) { 
-      //   debug("Collant temp: %3d°C \r\n", rxFrame.data[3] - 40); 
-      //}    
+      if(rxFrame.identifier == 0x7E8) { 
+        logf("* Collant temp: %3d°C \r\n", rxFrame.data[COLANT_TEMP]); 
+      }    
   }    
 
 #if USE_DRVR_MBOX 
   xMessage.sender = xCAN;
-  xMessage.value = 1003;
+  xMessage.value = rxFrame.data[COLANT_TEMP];  // SPN for test only
   snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "CANRx");
   xQueueSend(xQueue, &xMessage, (TickType_t)500);
 #endif 

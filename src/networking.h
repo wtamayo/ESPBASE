@@ -10,19 +10,20 @@
 #include <ESPmDNS.h>
 #include <SPI.h>
 
-
-static const char* host = "AKBarge";
-static const char* ssidAP = "AKBarge";
+// Access Point
+static const char* host = "ESP32-AP";
+static const char* ssidAP = "Xiao";
 static const char* passwordAP = "";
 
-static const char* hostname= "akbarge";
+// Client connects to my home wifi network
+static const char* hostname= "ESP32_Client";
 static const char* ssid = "VICMAR";
 static const char* password = "6043656101vm";
 
 // Ethernet UDP
 static uint8_t mac[6];
-static IPAddress WindowsIP(192, 168, 1, 100);
-static IPAddress localIP(192, 168, 1, 101);  // Replace by user entry in portal
+static IPAddress WindowsIP(192, 168, 0, 135);
+static IPAddress localIP(192, 168, 0, 101);  // Replace by user entry in portal
 static IPAddress remoteIP = IPAddress();     // IP of remote device
 static uint16_t remotePort;
 static uint16_t localPort = 8888;            // 55555 on RTK
@@ -30,7 +31,7 @@ static uint16_t WindowsPort = 9999;
 
 // buffers for receiving and sending data
 static char packetBuffer[UDP_TX_PACKET_MAX_SIZE];  // buffer to hold incoming packet,
-static char replyBuffer[512] = "AKBarge ACK";                 // a string to send back
+static char replyBuffer[512] = "ESP32-ACK";                 // a string to send back
 
 static EthernetUDP udpTx;
 static EthernetUDP udpRx;

@@ -1,19 +1,12 @@
 #ifndef _DRIVERS_H_
 #define _DRIVERS_H_
 
-#include <Wire.h>
-#include <SPI.h>
-#include <ESP32-TWAI-CAN.hpp>
-#include <HardwareSerial.h>
 #include "includes.h"
 #include "utils.h"
 
 
 /******* Hardware Defines *******/ 
 #define BeatLed LED_BUILTIN
-
-// Serial RS-232
-static HardwareSerial SerialRS232(1);
 
 #ifdef DEVKITC
 // UART0 default pins on ESP32-S3
@@ -39,21 +32,23 @@ static HardwareSerial SerialRS232(1);
 #define CAN_TX		D3    // GPIO_NUM_4
 #define CAN_RX		D2    // GPIO_NUM_3
 // ADC/GPIO
-//#define D0_PIN      D0    // Available (was SS_PIN on SW manged PIN)
-//#define D1_PIN      D1    // Available
-//I2C
-//#define SDA_PIN     D4    // Internally wired SDA
-//#define SCL_PIN     D5    // Internally wired SCL
+#define D1_PIN      D1    // Available
+// I2C 
+// D4 and D5 Internally wired on Xiao
 // Xiao SPI PIN remapping SCK, MISO, MOSI, SS
 #define SCK_PIN     D8    // GPIO_NUM_7  
 #define MISO_PIN    D9    // GPIO_NUM_8  
 #define MOSI_PIN    D10   // GPIO_NUM_9  
 // SS_PIN Hardwired to VCC on SPI Chip.
-#define SS_PIN      GPIO_NUM_46  // Using pin not exposed in Xiao
+#define SS_PIN      D0    //GPIO_NUM_46 Using pin not exposed in Xiao
 #endif
 
-#define RS232_BAUD 9600
-#define CAN_SPEED   500
+// UART
+#define RS232_BAUD          9600
+// CAN
+#define CAN_SPEED           500
+#define CAN_FRAME_MAX_DLC   8
+
 static const int spiClk = 1000000; 
 
 // I2C Device(s)
@@ -67,18 +62,48 @@ extern QueueHandle_t xQueue;
     id29bit
 } idfSize_t;
 
+struct CanMessage {
+    uint32_t canId;
+    uint8_t payload[8];
+    uint8_t dlc;
+    idfSize_t idSize = id29bit;
+};
+
 void initFwRevision();
-void hwTaskLED(void *pvParameters); 
+void hwTaskLED(void *pvParameters);
+// Serial 
 void initUARTx();
-void initSPI();
 void RS232tx(const char* msg);
 int32_t RS232rx();
+// I2C
+void initI2C();
 void mI2C();
-void writeCAN(uint32_t CANID, idfSize_t sizeId, uint8_t dataLength, uint64_t payload);
-uint64_t readCAN();
+// CAN
+bool writeCAN(CanMessage* message);
+bool readCAN(CanMessage* message);
+//uint64_t readCAN(uint32_t PGN);
 void initCAN();
-
 // Test function
 void tCAN();
+// SPI
+void initSPI();
+
+// TODO: Move MAX31865 to its own file, this is low level
+/*
+
+// MAX31865 constants
+#define MAX31865_RREF      430.0f   // PT100 board usually 430 ohm
+#define MAX31865_RNOMINAL  100.0f   // PT100 = 100 ohm at 0°C
+
+// For PT1000 use:
+ #define MAX31865_RREF      4300.0f
+// #define MAX31865_RNOMINAL  1000.0f
+
+// MAX31865
+void initMAX31865();
+float readMAX31865TempC();
+uint8_t readMAX31865Fault();
+void clearMAX31865Fault();
+*/
 
 #endif

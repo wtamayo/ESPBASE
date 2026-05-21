@@ -54,7 +54,8 @@ const Timeoutus_t timOut60s = 60 * 1000000;
 const Timeoutus_t timOut300s = 300 * 1000000;
 
 // CAN SPNs
-#define COLANT_TEMP 0
-#define MOTOR_TEMP  1
+#define SPN_MOTOR_TEMP  0
+#define SPN_COLANT_TEMP 1
+
 
 #endif

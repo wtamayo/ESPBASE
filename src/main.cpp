@@ -3,9 +3,9 @@
  * Multi-task communication hub on ESP32:
  *  
  * Each interface runs in its own task:
- *  RS232 → vAppTsk1
- *  UDP → vAppTsk2
- *  CAN → vAppTsk3
+ *  RS232 → vTaskRS232
+ *  UDP → vTaskUDP
+ *  CAN → vTaskCAN
  *  
  *  All tasks send messages to a central mailbox (queue)
  *  A dispatcher task (vPrintTsk) receives and processes/logs messages
@@ -22,7 +22,8 @@
 #include "freertos/ringbuf.h"
 #include "freertos/task.h"
 
-#define DEBUG 0
+#define DEBUG_TSK 1
+#define DEBUG_CAN 1
 
 extern SemaphoreHandle_t xSerialMutex;
 
@@ -33,7 +34,6 @@ extern SemaphoreHandle_t xSerialMutex;
 //#endif
 // TODO: Assign WiFi to another core 
 
-#if USE_TASK_MBOX
 QueueHandle_t xQueue;
 
 TaskHandle_t hAppTsk1  = NULL;
@@ -50,10 +50,10 @@ void vPrintTsk( void *pvParameters )
     while(1) 
     {     
       if (xQueueReceive(xQueue, &xMessage, portMAX_DELAY) == pdPASS) 
-      {                        
-          
+      {      
+#if DEBUG_TSK          
           logf("\n %lu: %s: %lu", esp_log_timestamp(), xMessage.msg, (unsigned long)xMessage.value);
-
+#endif          
           // Task dispatch 
           if (xMessage.sender == Task1) {}
           if (xMessage.sender == Task2) {}
@@ -64,9 +64,7 @@ void vPrintTsk( void *pvParameters )
       } 
     }
 }
-#endif
 
-#if USE_RTOS_TASK
 
 /****************************************************************
  *  Description: 
@@ -77,7 +75,7 @@ void vPrintTsk( void *pvParameters )
  * 
  ****************************************************************
  */ 
-void vAppTsk1( void *pvParameters ) 
+void vTaskRS232( void *pvParameters ) 
 {
   Data_t xMessage;
   xMessage.sender = Task1;
@@ -86,14 +84,13 @@ void vAppTsk1( void *pvParameters )
   {
     // Write application process here:
     RS232tx("Hello world \n");
-    vTaskDelay(pdMS_TO_TICKS(500));
     RS232rx();
 
     // Send received data to the message box if needed
     xMessage.value = 2001;    
-    snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "AppTask1");
+    snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "TaskRS232");
     xQueueSend(xQueue, &xMessage, (TickType_t)500);
-    vTaskDelay(1000/ portTICK_RATE_MS);
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
 
@@ -106,7 +103,7 @@ void vAppTsk1( void *pvParameters )
  * 
  ****************************************************************
  */ 
-void vAppTsk2( void *pvParameters ) 
+void vTaskUDP( void *pvParameters ) 
 {
   Data_t xMessage;
   xMessage.sender = Task2;
@@ -115,14 +112,13 @@ void vAppTsk2( void *pvParameters )
   {
     // Write application process here
     readUDP();
-    vTaskDelay(pdMS_TO_TICKS(500));
     writeUDP(WindowsIP, WindowsPort, replyBuffer);
-
+    
     // Send received data to the message box if needed
     xMessage.value = 2002;
-    snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "AppTask2");
+    snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "TaskUDP");
     xQueueSend(xQueue, &xMessage, (TickType_t)500);
-    vTaskDelay(1000/ portTICK_RATE_MS);
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
 
@@ -135,31 +131,52 @@ void vAppTsk2( void *pvParameters )
  * 
  ****************************************************************
  */ 
-void vAppTsk3( void *pvParameters ) 
+void vTaskCAN( void *pvParameters ) 
 {
   Data_t xMessage;
   xMessage.sender = Task3;
 
-  uint32_t canid = 0x18FF008B; 
-  uint64_t payload = 0xDEADBEEFBBAABBAA;
+  // CAN data to be send out 
+  uint8_t data[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xBB, 0xAA, 0xBB, 0xAA};
 
+  CanMessage canRxMsg;
+  canRxMsg.canId = 0x7E8;       // CAN ID filter
+
+  CanMessage canTxMsg;
+  canTxMsg.canId = 0x18FF008B;
+  canTxMsg.dlc = CAN_FRAME_MAX_DLC;
+  memcpy(canTxMsg.payload, data, sizeof(data));
+   
 
   while(1) 
   {
     // Write application process here
-    readCAN();
-    vTaskDelay(pdMS_TO_TICKS(500));
-    writeCAN(canid, id29bit, TWAI_FRAME_MAX_DLC, payload);
+    if (readCAN(&canRxMsg))
+    {       
+      logf("\n\n< Reading CAN ID: 0x%x --> 0x", canRxMsg.canId);
+      
+      for (int i = 0; i < canRxMsg.dlc; i++) {
+          logf("%X", canRxMsg.payload[i]);
+      }      
+
+      logf("\n");
+      
+      // Extract SPN by masking desired postion      
+#if DEBUG_CAN      
+      logf("\n* Motor Temp: %3dC Deg \r\n", canRxMsg.payload[SPN_MOTOR_TEMP]);  
+#endif          
+    }
+
+    writeCAN(&canTxMsg);
     
     // Send received data to the message box if needed
-    xMessage.value = 2003;
-    snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "AppTask3");
+    xMessage.value = canRxMsg.payload[SPN_MOTOR_TEMP];
+    snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "TaskCAN");
     xQueueSend(xQueue, &xMessage, (TickType_t)500);
-    vTaskDelay(1000/ portTICK_RATE_MS);
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
 
-#endif
 
 void setup() 
 {
@@ -168,18 +185,15 @@ void setup()
   delay(1000);  
   xSerialMutex = xSemaphoreCreateMutex();
 
-#if USE_TASK_MBOX
   xQueue = xQueueCreate(50, sizeof(Data_t)); 
   if (xQueue != NULL) 
   {   // higher priority may starve loop
       xTaskCreatePinnedToCore(vPrintTsk, "PrintTask", 4096, NULL, 2, &hPrintTsk, drv_cpu); 
   }
-#endif
 
   initFwRevision();
-  Wire.begin();
   mountFS();
-  
+  initI2C();
   initUARTx();
   initCAN();
   initSPI();
@@ -187,16 +201,15 @@ void setup()
   
   // Connect to WiFi networks
   initWifiSTA();     // Should timeout and be before initWifiAP
-  initWifiAP();
+  //initWifiAP();
   initWebServer();
 
-#if USE_RTOS_TASK
-    // TASK: add task handlers to place tasks on block during file upload and fw update.
-    xTaskCreatePinnedToCore(vAppTsk1, "AppTsk1", 4096, NULL, 3, &hAppTsk1, app_cpu);
-    xTaskCreatePinnedToCore(vAppTsk2, "AppTsk2", 4096, NULL, 3, &hAppTsk2, app_cpu);
-    // Higher priority tasks here: CAN
-    xTaskCreatePinnedToCore(vAppTsk3, "AppTsk3", 4096, NULL, 4, &hAppTsk3, drv_cpu);
-#endif
+
+  // TASK: add task handlers to place tasks on block during file upload and fw update.
+  xTaskCreatePinnedToCore(vTaskRS232, "AppTsk1", 4096, NULL, 3, &hAppTsk1, app_cpu);
+  xTaskCreatePinnedToCore(vTaskUDP, "AppTsk2", 4096, NULL, 3, &hAppTsk2, app_cpu);
+  // Higher priority tasks here: CAN
+  xTaskCreatePinnedToCore(vTaskCAN, "AppTsk3", 4096, NULL, 4, &hAppTsk3, drv_cpu);
 
   // Time sensitive task
   xTaskCreate(hwTaskLED,"LEDTask", 2048, NULL, 1, NULL);

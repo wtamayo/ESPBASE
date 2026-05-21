@@ -1,12 +1,17 @@
 #include "networking.h"
 
+#define DEBUG_UDP   0
+#define DEBUG_SPI   0
+#define DEBUG_ETH   0
+#define DEBUG_WIFI  0
+
 
 /************* WIFI *************/ 
 
 void initWifiAP()
 {
   WiFi.softAP(ssidAP, passwordAP);  
-  logf("WiFi Direct available at Access Point IP: %c", WiFi.softAPIP());
+  logf("WiFi Direct available at Access Point IP: %s", WiFi.softAPIP().toString().c_str());
 
   if (!MDNS.begin(host)) 
   {
@@ -23,7 +28,7 @@ boolean initWifiSTA()
   unsigned long tStart = millis();
   // Start WiFi interface
   WiFi.begin(ssid, password);                                                      
-  logf("Trying to connet to WiFi with SSID: %c", ssid);
+  logf("Trying to connet to WiFi with SSID: %s", ssid);
     
   // Wait until WiFi is connected, but quit in 10 sec if no LAN found
   //timerCreateStart(timWifiSta, &hTimWifiSta, timOut10s);
@@ -33,26 +38,26 @@ boolean initWifiSTA()
         logf(".");
   } 
 
-  if (WiFi.status() != WL_CONNECTED) 
+    if (WiFi.status() != WL_CONNECTED) 
   {
       //Serial.println(" Unable to connet to " + String(ssid));        
-      logf(" Unable to connet to %c", ssid);
+      logf(" Unable to connet to %s", ssid);
   } 
   else 
   {
       // Show IP address that the ESP32 has received from router  
-      logf(" Connected to LAN with IP address: %c \n", WiFi.localIP());
+      logf(" Connected to LAN with IP address: %s \n", WiFi.localIP().toString().c_str());
 
       // Give device a hostname so webpage can be easier to access
-      if (!MDNS.begin(hostname))
-      {  
+        if (!MDNS.begin(hostname))
+        {  
           logf("Error starting mDNS \n");
           result = true;
-      } 
-      else 
-      {
-          logf("Device available at %c.local / or LAN IP address: ", hostname, WiFi.localIP());
-      }
+        } 
+        else 
+        {
+          logf("Device available at %s.local / or LAN IP address: %s", hostname, WiFi.localIP().toString().c_str());
+        }
   }
   return result;
 }
@@ -87,7 +92,7 @@ void initEth()
   if (Ethernet.linkStatus() == LinkON) 
   {
       netsta.enEth = connected;
-      logf("Ethernet Started on Gateway: %c, and IP: %c \n", Ethernet.gatewayIP(), Ethernet.localIP());
+      logf("Ethernet Started on Gateway: %s, and IP: %s \n", Ethernet.gatewayIP().toString().c_str(), Ethernet.localIP().toString().c_str());
   } 
   else 
   {
@@ -118,6 +123,14 @@ uint64_t readUDP()
 {
   uint64_t data = 0;
 
+  // Dont process if no Ethernet available
+  if (netsta.enEth != connected) {
+#if DEBUG_UDP    
+      logf("Ethernet not avaialbe");
+#endif      
+      return 0;
+  } 
+
   // if there's data available, read a packet
   int packetSize = udpRx.parsePacket();       
       
@@ -142,7 +155,7 @@ uint64_t readUDP()
 
       // read the packet into packetBuffer
       udpRx.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);      
-      logf(", Payload: %d", packetBuffer);
+      logf(", Payload: %s", packetBuffer);
 
 #if USE_HAL_MBOX
        // Send received data to the message box
@@ -158,8 +171,16 @@ uint64_t readUDP()
 // Transmit buffer to remote udpTx 
 void writeUDP(IPAddress remoteIP, uint16_t remotePort, const char* tBuffer) 
 {
+      // Dont process if no Ethernet available
+      if (netsta.enEth != connected) {
+#if DEBUG_UDP         
+          logf("Ethernet not avaialbe");
+#endif          
+          return;
+      } 
+      
       // send a reply to the IP address and port that sent us the packet we received
-      logf(">> %s:%d -->UDP msg to: %s:%d, Payload: %s \n", localIP.toString(), localPort, remoteIP.toString(), remotePort, tBuffer);
+      logf(">> %s:%d -->UDP msg to: %s:%d, Payload: %s \n", localIP.toString().c_str(), localPort, remoteIP.toString().c_str(), remotePort, tBuffer);
       
       if (!udpTx.beginPacket(remoteIP, remotePort)) 
       {

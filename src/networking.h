@@ -7,23 +7,42 @@
 #include <WiFiClientSecure.h>
 #include <Ethernet.h>
 #include <EthernetUdp.h>
+#include <WiFiUdp.h>
 #include <ESPmDNS.h>
 #include <SPI.h>
 
+#define WIFI_UDP 1
+
 // Access Point
-static const char* host = "ESP32-AP";
+static const char* host = "IoT-AP";
 static const char* ssidAP = "Xiao";
 static const char* passwordAP = "";
 
-// Client connects to my home wifi network
-static const char* hostname= "ESP32_Client";
-static const char* ssid = "VICMAR";
-static const char* password = "6043656101vm";
+// Station: Client connects to my home wifi network
+// WiFi UDP
+static const char* hostname= "IoTStation";     // ESP32 Device Name
+static const char* ssid = "VICMAR";            // Info about host network
+static const char* password = "6043656101vm"; 
+static IPAddress gateway(192, 168, 0, 1);
+static IPAddress subnet(255, 255, 255, 0);
+static IPAddress dns1(192, 168, 0, 1);
+static IPAddress dns2(8, 8, 8, 8);
+
+#if WIFI_UDP
+// For WiFi based UDP communication
+static IPAddress localIP(192, 168, 0, 105);  // IP for Wifi
+static WiFiUDP udpTx;
+static WiFiUDP udpRx;
+#else
+// For Ethernet based UDP communication
+static IPAddress localIP(192, 168, 0, 105);  // IP for Ethernet
+static EthernetUDP udpTx;
+static EthernetUDP udpRx;
+#endif
 
 // Ethernet UDP
 static uint8_t mac[6];
-static IPAddress WindowsIP(192, 168, 0, 135);
-static IPAddress localIP(192, 168, 0, 101);  // Replace by user entry in portal
+static IPAddress WindowsIP(192, 168, 0, 135); 
 static IPAddress remoteIP = IPAddress();     // IP of remote device
 static uint16_t remotePort;
 static uint16_t localPort = 8888;            // 55555 on RTK
@@ -33,8 +52,6 @@ static uint16_t WindowsPort = 9999;
 static char packetBuffer[UDP_TX_PACKET_MAX_SIZE];  // buffer to hold incoming packet,
 static char replyBuffer[512] = "ESP32-ACK";                 // a string to send back
 
-static EthernetUDP udpTx;
-static EthernetUDP udpRx;
 
 void writeUDP(IPAddress remoteIP, uint16_t remotePort, const char* tBuffer); 
 uint64_t readUDP();

@@ -22,8 +22,9 @@
 #include "freertos/ringbuf.h"
 #include "freertos/task.h"
 
-#define DEBUG_TSK 1
-#define DEBUG_CAN 1
+#define DEBUG_TSK  1
+#define DEBUG_CAN  0
+#define DEBUG_WIFI 1
 
 extern SemaphoreHandle_t xSerialMutex;
 
@@ -225,8 +226,9 @@ void loop()
   mEthernet();
   mWebServer();
   //mOTAreset();
-  
-#if DEBUG_INFO  
+
+
+#if DEBUG_LOOP 
   logf("\n # %lu: \n", millis());
 #endif
 }

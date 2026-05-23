@@ -21,9 +21,9 @@ void hwTaskLED(void *pvParameters)
 void initFwRevision() 
 {
   logf("\n");
-  logf("*************** AK Barge ************** \n");  
-  logf("        MCU Firmware Rev: %c \n", String(fwVersions[0]));
-  logf("        3CS Firmware Rev: %c \n", String(fwVersions[1]));
+  logf("*************** IoT Device ************** \n");  
+  logf("        Firmware Rev: %c \n", String(fwVersions[0]));
+  logf("        Portal Rev: %c \n", String(fwVersions[1]));
   logf("*************************************** \n");
 }
 

@@ -2,8 +2,6 @@
 #include "includes.h"
 #include <Wire.h>
 
-#define DEBUG_I2C 0
-
 extern SemaphoreHandle_t xSerialMutex;
 
 void initI2C()

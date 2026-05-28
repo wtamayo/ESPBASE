@@ -22,10 +22,6 @@
 #include "freertos/ringbuf.h"
 #include "freertos/task.h"
 
-#define DEBUG_TSK  1
-#define DEBUG_CAN  0
-#define DEBUG_WIFI 1
-
 extern SemaphoreHandle_t xSerialMutex;
 
 //#if CONFIG_FREERTOS_UNICORE
@@ -141,7 +137,7 @@ void vTaskCAN( void *pvParameters )
   uint8_t data[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xBB, 0xAA, 0xBB, 0xAA};
 
   CanMessage canRxMsg;
-  canRxMsg.canId = 0x7E8;       // CAN ID filter
+  canRxMsg.canId = CAN_ID_FILTER;       // CAN ID filter
 
   CanMessage canTxMsg;
   canTxMsg.canId = 0x18FF008B;

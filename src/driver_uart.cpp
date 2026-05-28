@@ -2,8 +2,6 @@
 #include "includes.h"
 #include <HardwareSerial.h>
 
-#define DEBUG_UART 0
-
 extern SemaphoreHandle_t xSerialMutex;
 
 // Serial RS-232
@@ -23,12 +21,14 @@ void initUARTx()
 int32_t RS232rx()
 {
   Data_t xMessage;
-  char data = 0;
+  char data;
 
   // Drain entire UART1 buffer to prevent FIFO overflow
   while (SerialRS232.available() > 0)
   {
-    data = SerialRS232.read();  // Read all available bytes
+    // Read all available chars available
+    data = SerialRS232.read();  
+    logf("RS232 Data received %s", data);
   }
 
   // Interrupt based HW can send rx data to the message box

@@ -2,8 +2,6 @@
 #include "includes.h"
 #include <SPI.h>
 
-#define DEBUG_SPI 0
-
 extern SemaphoreHandle_t xSerialMutex;
 
 

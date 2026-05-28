@@ -2,8 +2,6 @@
 #include "includes.h"
 #include <ESP32-TWAI-CAN.hpp>
 
-#define DEBUG_CAN 1
-
 extern SemaphoreHandle_t xSerialMutex;
 
 

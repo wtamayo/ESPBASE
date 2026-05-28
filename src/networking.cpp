@@ -1,11 +1,5 @@
 #include "networking.h"
 
-#define DEBUG_UDP   0
-#define DEBUG_SPI   0
-#define DEBUG_ETH   0
-#define DEBUG_WIFI  0
-
-
 /************* WIFI *************/ 
 
 void initWifiAP()
@@ -49,11 +43,14 @@ boolean initWifiSTA()
   {
       //Serial.println(" Unable to connet to " + String(ssid));        
       logf("\n Unable to connet to %s \n\n", ssid);
+      netsta.enWiFiSTA = disconnected;
   } 
   else 
   {
       // Show IP address that the ESP32 has received from router  
       logf("\n Connected to LAN with IP address: %s \n\n", WiFi.localIP().toString().c_str());
+      
+      netsta.enWiFiSTA = connected;
 
       // Give device a hostname so webpage can be easier to access
         if (!MDNS.begin(hostname))
@@ -67,12 +64,14 @@ boolean initWifiSTA()
         }
 
 #if WIFI_UDP
-      udpRx.begin(localPort);
-      udpTx.begin(localPort);
-
-      logf("\n WiFi UDP service on: %d \n", localPort);
+      //udpRx.begin(localPort);
+      //udpTx.begin(remotePort);
+      if (udp.begin(localPort)) {
+          logf("\n WiFi UDP service listening on: %d \n", localPort);
+      } else {
+          logf("\n WiFi UDP begin failed on port: %d \n", localPort);
+      }
 #endif
-
   }
   return result;
 }
@@ -153,48 +152,31 @@ uint64_t readUDP()
 #endif  
 
   // if there's data available, read a packet
-  int packetSize = udpRx.parsePacket();       
+  int packetSize = udp.parsePacket();       
       
   if (packetSize > 0) 
   {
-      logf("\n << Received UDP msg size %d <--", packetSize);
-
       // Identify remote IP
-      remoteIP = udpRx.remoteIP();
+      remoteIP = udp.remoteIP();
+      remotePort = udp.remotePort();
 
-      for (int i=0; i < 4; i++) 
-      {           
-           logf("%d", remoteIP[i]);
-           if (i < 3) {              
-              logf(".");
-           }             
-      }
-
-      // Identify remote port      
-      remotePort = udpRx.remotePort();
-      logf(":%d \n", remotePort);
+      logf("\n %s:%d \n", remoteIP.toString().c_str(), remotePort);
 
       // Clear buffer before reading
       memset(packetBuffer, 0, sizeof(packetBuffer));
 
       // read the packet into packetBuffer
-      int len = udpRx.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);      
+      int len = udp.read(packetBuffer, sizeof(packetBuffer) - 1);     
 
       // Terminate buffer
       if (len > 0) {
           packetBuffer[len] = '\0';
       }
 
-      logf(", Payload: %s", packetBuffer);
+      logf("\n< Received UDP msg size: %d, Payload: %s \n", packetSize, packetBuffer);
 
-#if USE_DRVR_TASK
-       // Send received data to the message box
-      Data_t xDevMessage;
-      xDevMessage.sender = xUDP;
-      xDevMessage.value = 2222;
-      xQueueSend(xQueue, &xDevMessage, (TickType_t)0);
-#endif       
-  }
+  } 
+
   return data;
 }
 
@@ -206,7 +188,7 @@ void writeUDP(IPAddress remoteIP, uint16_t remotePort, const char* tBuffer)
           logf("\n WiFi not connected, UDP not sent \n");
           return;
       }
-      logf("\n >> %s:%d --> UDP msg to: %s:%d, Payload: %s \n", WiFi.localIP().toString().c_str(), 
+      logf("\n> %s:%d --> UDP msg to: %s:%d, Payload: %s \n", WiFi.localIP().toString().c_str(), 
            localPort, remoteIP.toString().c_str(), remotePort, tBuffer);
 #else         
       if (netsta.enEth != connected) {
@@ -217,16 +199,16 @@ void writeUDP(IPAddress remoteIP, uint16_t remotePort, const char* tBuffer)
            localPort, remoteIP.toString().c_str(), remotePort, tBuffer);
 #endif    
 
-      if (!udpTx.beginPacket(remoteIP, remotePort)) 
+      if (!udp.beginPacket(remoteIP, remotePort)) 
       {
           logf(">>Remote IP/Port Error");
           return;
       } 
 
       size_t tLen = strlen(tBuffer);
-      udpTx.write(reinterpret_cast<const uint8_t*>(tBuffer), tLen);
+      udp.write(reinterpret_cast<const uint8_t*>(tBuffer), tLen);
 
-      if (!udpTx.endPacket()) 
+      if (!udp.endPacket()) 
       {          
           logf("\n >>UDP Rx Error \n");
       }

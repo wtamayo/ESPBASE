@@ -1,8 +1,5 @@
 #include "wbserver.h"
 
-#define DEBUG 1
-
-
 void hServerLogin() 
 {
   server.sendHeader("Connection", "close");  

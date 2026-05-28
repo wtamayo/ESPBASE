@@ -7,7 +7,7 @@
 #include <esp_timer.h>
 
 // MCU and 3CS versions
-const float fwVersions[2] = {0.8,0};
+const float fwVersions[2] = {1.0,0};
 
 // Microseconds timers
 typedef uint64_t Timeoutus_t;
@@ -21,6 +21,18 @@ typedef uint64_t Timeoutus_t;
 // Timeouts
 #define WATCHDOG_TIMEOUT  5  // In seconds
 #define WIFISTA_TIMEOUT   5
+
+// Debug flags
+#define DEBUG_TSK       1
+#define DEBUG_CAN       0
+#define DEBUG_GPIO      0
+#define DEBUG_I2C       0
+#define DEBUG_UART      0
+#define DEBUG_SPI       0
+#define DEBUG_UDP       0
+#define DEBUG_ETH       0
+#define DEBUG_WIFI      0
+#define DEBUG_WEB_SRV   0
 
 // Device writers
 typedef enum {
@@ -56,6 +68,9 @@ const Timeoutus_t timOut300s = 300 * 1000000;
 // CAN SPNs
 #define SPN_MOTOR_TEMP  0
 #define SPN_COLANT_TEMP 1
+
+// CAN IDs
+#define CAN_ID_FILTER 0x7E8
 
 
 #endif

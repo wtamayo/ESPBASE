@@ -30,26 +30,43 @@ static IPAddress dns2(8, 8, 8, 8);
 
 #if WIFI_UDP
 // For WiFi based UDP communication
-static IPAddress localIP(192, 168, 0, 105);  // IP for Wifi
-static WiFiUDP udpTx;
-static WiFiUDP udpRx;
+static IPAddress localIP(192, 168, 0, 105);  // ESP32 IP for Wifi
+//static WiFiUDP udpTx;
+//static WiFiUDP udpRx;
+static WiFiUDP udp;
 #else
 // For Ethernet based UDP communication
-static IPAddress localIP(192, 168, 0, 105);  // IP for Ethernet
+static IPAddress localIP(192, 168, 0, 105);  // ESP32 IP for Ethernet
 static EthernetUDP udpTx;
 static EthernetUDP udpRx;
 #endif
 
 // Ethernet UDP
 static uint8_t mac[6];
+
+// The IP address on the Windows PC/Server where the ESP32 
+// will send messages to.
 static IPAddress WindowsIP(192, 168, 0, 135); 
-static IPAddress remoteIP = IPAddress();     // IP of remote device
+
+// The UDP port on the Windows PC/Server where the ESP32 
+// will send messages to.
+static uint16_t WindowsPort = 1202;
+
+// The IP address of the device that last sent a UDP packet to the ESP32. 
+// It is filled by remoteIP = udpRx.remoteIP();
+static IPAddress remoteIP = IPAddress();     
+
+// The UDP source port of the device that last sent a UDP packet to the ESP32. 
+// It is filled by remotePort = udpRx.remotePort();.
 static uint16_t remotePort;
-static uint16_t localPort = 8888;            // 55555 on RTK
-static uint16_t WindowsPort = 9999;
+
+// The ESP32 UDP listening/source port.
+// udpRx.begin(localPort) and udpTx.begin(localPort)
+static uint16_t localPort = 8888;            
+
 
 // buffers for receiving and sending data
-static char packetBuffer[UDP_TX_PACKET_MAX_SIZE];  // buffer to hold incoming packet,
+static char packetBuffer[512];  // buffer to hold incoming packet,
 static char replyBuffer[512] = "ESP32-ACK";                 // a string to send back
 
 

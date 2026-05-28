@@ -1,8 +1,6 @@
 #include "drivers.h"
 #include "includes.h"
 
-#define DEBUG_GPIO 0
-
 
 void hwTaskLED(void *pvParameters) 
 {

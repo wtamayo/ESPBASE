@@ -33,10 +33,13 @@ extern SemaphoreHandle_t xSerialMutex;
 
 QueueHandle_t xQueue;
 
-TaskHandle_t hAppTsk1  = NULL;
-TaskHandle_t hAppTsk2  = NULL;
-TaskHandle_t hAppTsk3  = NULL;
-TaskHandle_t hPrintTsk = NULL;
+TaskHandle_t hAppTsk1    = NULL;
+TaskHandle_t hAppTsk2    = NULL;
+TaskHandle_t hAppTsk3    = NULL;
+TaskHandle_t hAppTsk4    = NULL;
+TaskHandle_t hAppTsk5    = NULL;
+TaskHandle_t hPrintTsk   = NULL;
+
 
 // Dispatching Mailbox, can also be checked by tasks
 void vPrintTsk( void *pvParameters ) 
@@ -61,6 +64,65 @@ void vPrintTsk( void *pvParameters )
       } 
     }
 }
+
+
+/****************************************************************
+ *  Description: 
+ * 
+ *  Input: Gets SPI data from Mail box
+ * 
+ *  Output: Send and Receives I2C msg
+ * 
+ ****************************************************************
+ */ 
+void vTaskSPI( void *pvParameters ) 
+{
+  Data_t xMessage;
+  xMessage.sender = xSPI;
+
+  while(1) 
+  {
+    // Write application process here:
+    
+
+    // Send received data to the message box if needed
+    xMessage.value = 2004;    
+    snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "TaskSPI");
+    xQueueSend(xQueue, &xMessage, (TickType_t)500);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+}
+
+
+
+
+/****************************************************************
+ *  Description: 
+ * 
+ *  Input: Gets I2C data from Mail box
+ * 
+ *  Output: Send and Receives I2C msg
+ * 
+ ****************************************************************
+ */ 
+void vTaskI2C( void *pvParameters ) 
+{
+  Data_t xMessage;
+  xMessage.sender = xSPI;
+
+  while(1) 
+  {
+    // Write application process here:
+    //mI2C(); //Uncomment when device connected
+
+    // Send received data to the message box if needed
+    xMessage.value = 2004;    
+    snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "TaskI2C");
+    xQueueSend(xQueue, &xMessage, (TickType_t)500);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+}
+
 
 
 /****************************************************************
@@ -207,6 +269,8 @@ void setup()
   xTaskCreatePinnedToCore(vTaskUDP, "AppTsk2", 4096, NULL, 3, &hAppTsk2, app_cpu);
   // Higher priority tasks here: CAN
   xTaskCreatePinnedToCore(vTaskCAN, "AppTsk3", 4096, NULL, 4, &hAppTsk3, drv_cpu);
+  xTaskCreatePinnedToCore(vTaskI2C, "AppTsk4", 4096, NULL, 4, &hAppTsk4, drv_cpu);
+  xTaskCreatePinnedToCore(vTaskSPI, "AppTsk5", 4096, NULL, 4, &hAppTsk5, drv_cpu);
 
   // Time sensitive task
   xTaskCreate(hwTaskLED,"LEDTask", 2048, NULL, 1, NULL);

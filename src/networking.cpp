@@ -172,9 +172,9 @@ uint64_t readUDP()
       if (len > 0) {
           packetBuffer[len] = '\0';
       }
-
+#if DEBUG_UDP
       logf("\n< Received UDP msg size: %d, Payload: %s \n", packetSize, packetBuffer);
-
+#endif
   } 
 
   return data;
@@ -183,16 +183,17 @@ uint64_t readUDP()
 // Transmit buffer to remote udpTx 
 void writeUDP(IPAddress remoteIP, uint16_t remotePort, const char* tBuffer) 
 {
-#if WIFI_UDP  
+#if DEBUG_UDP  
       if (WiFi.status() != WL_CONNECTED) {
           logf("\n WiFi not connected, UDP not sent \n");
           return;
       }
+  
       logf("\n> %s:%d --> UDP msg to: %s:%d, Payload: %s \n", WiFi.localIP().toString().c_str(), 
-           localPort, remoteIP.toString().c_str(), remotePort, tBuffer);
-#else         
+           localPort, remoteIP.toString().c_str(), remotePort, tBuffer);         
+        
       if (netsta.enEth != connected) {
-          logf("\n Ethernet not avaialbe");          
+          logf("\n Ethernet not avaialbe \n");          
           return;
       } 
       logf("\n >> %s:%d -->UDP msg to: %s:%d, Payload: %s \n", localIP.toString().c_str(), 

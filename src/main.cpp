@@ -87,10 +87,17 @@ void vTaskADC( void *pvParameters )
   while(1) 
   {
     // Write application process here:
-    
+    int raw = readADCavg(ADC_PIN);
 
+    // 4095 since is a 12 bit resolution ADC
+    float mV = (raw * (3.3f / 4095.0f)) * 1000;
+
+#if DEBUG_ADC
+    logf("\n ADC Raw: %4d  Voltage: %.0fmV \n", raw, mV);
+#endif    
+    
     // Send received data to the message box if needed
-    xMessage.value = 2007;    
+    xMessage.value = mV;     
     snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "TaskADC");
     xQueueSend(xQueue, &xMessage, (TickType_t)500);
     vTaskDelay(pdMS_TO_TICKS(1000));
@@ -201,8 +208,10 @@ void vTaskUDP( void *pvParameters )
   while(1) 
   {
     // Write application process here
-    readUDP();
-    writeUDP(WindowsIP, WindowsPort, replyBuffer);
+    if (isWiFiCon() || isEthernetCon()) {
+        readUDP();
+        writeUDP(WindowsIP, WindowsPort, replyBuffer);
+    }
     
     // Send received data to the message box if needed
     xMessage.value = 2002;
@@ -283,6 +292,7 @@ void setup()
 
   initFwRevision();
   mountFS();
+  initADC();
   initI2C();
   initUARTx();
   initCAN();
@@ -296,13 +306,13 @@ void setup()
 
 
   // TASK: add task handlers to place tasks on block during file upload and fw update.
-  xTaskCreatePinnedToCore(vTaskUART1, "AppTsk1", 4096, NULL, 3, &hTskRS232, app_cpu);
-  xTaskCreatePinnedToCore(vTaskUDP, "AppTsk2", 4096, NULL, 3, &hTskUDP, app_cpu);
+  xTaskCreatePinnedToCore(vTaskUART1, "TaskUART1", 4096, NULL, 3, &hTskRS232, app_cpu);
+  xTaskCreatePinnedToCore(vTaskUDP, "TaskUDP", 4096, NULL, 3, &hTskUDP, app_cpu);
   // Higher priority tasks here: CAN
-  xTaskCreatePinnedToCore(vTaskCAN, "AppTsk3", 4096, NULL, 4, &hTskCAN, drv_cpu);
-  xTaskCreatePinnedToCore(vTaskI2C, "AppTsk4", 4096, NULL, 4, &hTskI2C, drv_cpu);
-  xTaskCreatePinnedToCore(vTaskSPI, "AppTsk5", 4096, NULL, 4, &hTskSPI, drv_cpu);
-  xTaskCreatePinnedToCore(vTaskADC, "AppTsk6", 4096, NULL, 4, &hTskADC, drv_cpu);
+  xTaskCreatePinnedToCore(vTaskCAN, "TaskCAN", 4096, NULL, 4, &hTskCAN, drv_cpu);
+  xTaskCreatePinnedToCore(vTaskI2C, "TaskI2C", 4096, NULL, 4, &hTskI2C, drv_cpu);
+  xTaskCreatePinnedToCore(vTaskSPI, "TaskSPI", 4096, NULL, 4, &hTskSPI, drv_cpu);
+  xTaskCreatePinnedToCore(vTaskADC, "TaskADC", 4096, NULL, 4, &hTskADC, drv_cpu);
 
   // Time sensitive task
   xTaskCreate(hwTaskLED,"LEDTask", 2048, NULL, 1, NULL);

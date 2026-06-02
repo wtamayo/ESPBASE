@@ -1,9 +1,41 @@
 #include "drivers.h"
 #include "includes.h"
 
-#define DEBUG_ADC 0
+#define SENSOR420MA 0
 
 extern SemaphoreHandle_t xSerialMutex;
+
+
+void initADC()
+{
+    analogReadResolution(12);
+#if SENSOR420MA
+    analogSetAttenuation(A1,ADC_11db);
+#endif
+    pinMode(ADC_PIN, INPUT);
+}
+
+uint16_t readADC()
+{
+    return analogRead(ADC_PIN);
+}
+
+
+uint16_t readADCavg(uint8_t ADC_PIN_NUM)
+{
+    uint32_t sum = 0;
+
+    for (int i = 0; i < 64; i++)
+    {
+        sum += analogRead(ADC_PIN_NUM);
+        delayMicroseconds(200);
+        vTaskDelay(pdMS_TO_TICKS(1));
+    }
+
+    return sum / 64;
+}
+    
+
 
 /*
 // A1 is GPIO1 on XIAO ESP32-S3

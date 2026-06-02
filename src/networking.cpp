@@ -64,8 +64,6 @@ boolean initWifiSTA()
         }
 
 #if WIFI_UDP
-      //udpRx.begin(localPort);
-      //udpTx.begin(remotePort);
       if (udp.begin(localPort)) {
           logf("\n WiFi UDP service listening on: %d \n", localPort);
       } else {
@@ -133,6 +131,23 @@ void initEth()
   */
 }
 
+
+// Check if WiFi is connected to a station
+bool isWiFiCon() {
+    if (netsta.enWiFiSTA == disconnected) {
+        return true;
+    }
+    return false;
+} 
+
+// check if Ethernet is connected 
+bool isEthernetCon() {
+    // may use (Ethernet.linkStatus() == LinkON) instead
+    if (netsta.enEth == connected) {
+        return true;
+    }
+    return false;
+}
 
 // Check the UDP Rx buffer for any data. 
 uint64_t readUDP()

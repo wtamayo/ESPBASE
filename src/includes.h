@@ -28,6 +28,7 @@ typedef uint64_t Timeoutus_t;
 #define DEBUG_I2C       0
 #define DEBUG_UART      0
 #define DEBUG_SPI       0
+#define DEBUG_ADC       0
 #define DEBUG_UDP       0
 #define DEBUG_ETH       0
 #define DEBUG_WIFI      0

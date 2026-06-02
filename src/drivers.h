@@ -51,7 +51,7 @@
 #define SS_PIN      D0    //GPIO_NUM_46 Using pin not exposed in Xiao
 
 // ADC Sensor
-#define SENSOR_PIN  A1
+#define ADC_PIN  A1
 
 #endif
 
@@ -100,6 +100,10 @@ void initCAN();
 void tCAN();
 // SPI
 void initSPI();
+// ADC
+void initADC();
+uint16_t readADC();
+uint16_t readADCavg(uint8_t ADC_PIN_NUM);
 
 // TODO: Move MAX31865 to its own file, this is low level
 /*

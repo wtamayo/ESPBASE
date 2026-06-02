@@ -4,6 +4,10 @@
 
 extern SemaphoreHandle_t xSerialMutex;
 
+// Timeout waiting upto 100ms for CAN data
+// This is a blocking wait, so add that to
+// scheduler task profiling behaviour.
+#define BLOCK_WAIT  100
 
 void initCAN() 
 {
@@ -77,7 +81,7 @@ bool readCAN(CanMessage* message)
 {
     CanFrame rxFrame;
 
-    if (!ESP32Can.readFrame(rxFrame, 100)) {
+    if (!ESP32Can.readFrame(rxFrame, BLOCK_WAIT)) {
         return false;
     }
 

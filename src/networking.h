@@ -79,6 +79,8 @@ void initWifiAP();
 boolean initWifiSTA();
 void initEth();
 void timoWifiSta_CallBack(void* arg);
+bool isWiFiCon();
+bool isEthernetCon();
 
 extern QueueHandle_t xQueue;
 

@@ -49,6 +49,10 @@
 
 // SS_PIN Hardwired to VCC on SPI Chip.
 #define SS_PIN      D0    //GPIO_NUM_46 Using pin not exposed in Xiao
+
+// ADC Sensor
+#define SENSOR_PIN  A1
+
 #endif
 
 // UART
@@ -81,8 +85,8 @@ void initFwRevision();
 void hwTaskLED(void *pvParameters);
 // Serial 
 void initUARTx();
-void RS232tx(const char* msg);
-int32_t RS232rx();
+void UART1Tx(const char* msg);
+int32_t UART1Rx();
 // I2C
 void initI2C();
 void scanI2C();

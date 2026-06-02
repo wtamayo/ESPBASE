@@ -17,7 +17,6 @@ typedef uint64_t Timeoutus_t;
 #define USE_DRVR_MBOX   1
 #define USE_RTOS_TASK   1
 #define printout_INFO   0
-
 // Timeouts
 #define WATCHDOG_TIMEOUT  5  // In seconds
 #define WIFISTA_TIMEOUT   5
@@ -36,6 +35,7 @@ typedef uint64_t Timeoutus_t;
 
 // Device writers
 typedef enum {
+  xADC,
   xI2C,
   xSPI,
   xUART,

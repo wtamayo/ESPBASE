@@ -3,7 +3,7 @@
  * Multi-task communication hub on ESP32:
  *  
  * Each interface runs in its own task:
- *  RS232 → vTaskRS232
+ *  RS232 → vTaskUART1
  *  UDP → vTaskUDP
  *  CAN → vTaskCAN
  *  
@@ -33,12 +33,13 @@ extern SemaphoreHandle_t xSerialMutex;
 
 QueueHandle_t xQueue;
 
-TaskHandle_t hAppTsk1    = NULL;
-TaskHandle_t hAppTsk2    = NULL;
-TaskHandle_t hAppTsk3    = NULL;
-TaskHandle_t hAppTsk4    = NULL;
-TaskHandle_t hAppTsk5    = NULL;
-TaskHandle_t hPrintTsk   = NULL;
+TaskHandle_t hTskRS232   = NULL;
+TaskHandle_t hTskUDP     = NULL;
+TaskHandle_t hTskCAN     = NULL;
+TaskHandle_t hTskI2C     = NULL;
+TaskHandle_t hTskSPI     = NULL;
+TaskHandle_t hTskADC     = NULL;
+TaskHandle_t hTskMsgQ    = NULL;
 
 
 // Dispatching Mailbox, can also be checked by tasks
@@ -59,12 +60,42 @@ void vPrintTsk( void *pvParameters )
           if (xMessage.sender == Task2) {}
           if (xMessage.sender == Task3) {}        
           if (xMessage.sender == xUART) {}
+          if (xMessage.sender == xADC)  {}
+          if (xMessage.sender == xSPI)  {}
+          if (xMessage.sender == xI2C)  {}
           if (xMessage.sender == xUDP)  {} // Update remote dashboard and itself
           if (xMessage.sender == xCAN)  {} // Read data from CAN bus and UDP to remote dashboard.             
       } 
     }
 }
 
+
+/****************************************************************
+ *  Description: ADC A1
+ * 
+ *  Input: Read ADC from pin A1
+ * 
+ *  Output: Averaged measured voltage
+ * 
+ ****************************************************************
+ */ 
+void vTaskADC( void *pvParameters ) 
+{
+  Data_t xMessage;
+  xMessage.sender = xADC;
+
+  while(1) 
+  {
+    // Write application process here:
+    
+
+    // Send received data to the message box if needed
+    xMessage.value = 2007;    
+    snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "TaskADC");
+    xQueueSend(xQueue, &xMessage, (TickType_t)500);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+}
 
 /****************************************************************
  *  Description: 
@@ -86,14 +117,12 @@ void vTaskSPI( void *pvParameters )
     
 
     // Send received data to the message box if needed
-    xMessage.value = 2004;    
+    xMessage.value = 2006;    
     snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "TaskSPI");
     xQueueSend(xQueue, &xMessage, (TickType_t)500);
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
-
-
 
 
 /****************************************************************
@@ -112,11 +141,13 @@ void vTaskI2C( void *pvParameters )
 
   while(1) 
   {
-    // Write application process here:
-    //mI2C(); //Uncomment when device connected
+#if DEBUG_I2C
+    //Test I2C R/W when device present
+    mI2C(); 
+#endif    
 
     // Send received data to the message box if needed
-    xMessage.value = 2004;    
+    xMessage.value = 2005;    
     snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "TaskI2C");
     xQueueSend(xQueue, &xMessage, (TickType_t)500);
     vTaskDelay(pdMS_TO_TICKS(1000));
@@ -134,16 +165,16 @@ void vTaskI2C( void *pvParameters )
  * 
  ****************************************************************
  */ 
-void vTaskRS232( void *pvParameters ) 
+void vTaskUART1( void *pvParameters ) 
 {
   Data_t xMessage;
-  xMessage.sender = Task1;
+  xMessage.sender = xUART;
 
   while(1) 
   {
     // Write application process here:
-    RS232tx("Hello world \n");
-    RS232rx();
+    UART1Tx("Hello world \n");
+    UART1Rx();
 
     // Send received data to the message box if needed
     xMessage.value = 2001;    
@@ -165,7 +196,7 @@ void vTaskRS232( void *pvParameters )
 void vTaskUDP( void *pvParameters ) 
 {
   Data_t xMessage;
-  xMessage.sender = Task2;
+  xMessage.sender = xUDP;
 
   while(1) 
   {
@@ -193,7 +224,7 @@ void vTaskUDP( void *pvParameters )
 void vTaskCAN( void *pvParameters ) 
 {
   Data_t xMessage;
-  xMessage.sender = Task3;
+  xMessage.sender = xCAN;
 
   // CAN data to be send out 
   uint8_t data[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xBB, 0xAA, 0xBB, 0xAA};
@@ -247,7 +278,7 @@ void setup()
   xQueue = xQueueCreate(50, sizeof(Data_t)); 
   if (xQueue != NULL) 
   {   // higher priority may starve loop
-      xTaskCreatePinnedToCore(vPrintTsk, "PrintTask", 4096, NULL, 2, &hPrintTsk, drv_cpu); 
+      xTaskCreatePinnedToCore(vPrintTsk, "PrintTask", 4096, NULL, 2, &hTskMsgQ, drv_cpu); 
   }
 
   initFwRevision();
@@ -265,17 +296,19 @@ void setup()
 
 
   // TASK: add task handlers to place tasks on block during file upload and fw update.
-  xTaskCreatePinnedToCore(vTaskRS232, "AppTsk1", 4096, NULL, 3, &hAppTsk1, app_cpu);
-  xTaskCreatePinnedToCore(vTaskUDP, "AppTsk2", 4096, NULL, 3, &hAppTsk2, app_cpu);
+  xTaskCreatePinnedToCore(vTaskUART1, "AppTsk1", 4096, NULL, 3, &hTskRS232, app_cpu);
+  xTaskCreatePinnedToCore(vTaskUDP, "AppTsk2", 4096, NULL, 3, &hTskUDP, app_cpu);
   // Higher priority tasks here: CAN
-  xTaskCreatePinnedToCore(vTaskCAN, "AppTsk3", 4096, NULL, 4, &hAppTsk3, drv_cpu);
-  xTaskCreatePinnedToCore(vTaskI2C, "AppTsk4", 4096, NULL, 4, &hAppTsk4, drv_cpu);
-  xTaskCreatePinnedToCore(vTaskSPI, "AppTsk5", 4096, NULL, 4, &hAppTsk5, drv_cpu);
+  xTaskCreatePinnedToCore(vTaskCAN, "AppTsk3", 4096, NULL, 4, &hTskCAN, drv_cpu);
+  xTaskCreatePinnedToCore(vTaskI2C, "AppTsk4", 4096, NULL, 4, &hTskI2C, drv_cpu);
+  xTaskCreatePinnedToCore(vTaskSPI, "AppTsk5", 4096, NULL, 4, &hTskSPI, drv_cpu);
+  xTaskCreatePinnedToCore(vTaskADC, "AppTsk6", 4096, NULL, 4, &hTskADC, drv_cpu);
 
   // Time sensitive task
   xTaskCreate(hwTaskLED,"LEDTask", 2048, NULL, 1, NULL);
 
-  logf("Setup Completed. \n");
+
+  logf(" Setup Completed. \n");
 
 }
 

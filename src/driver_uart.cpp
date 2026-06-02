@@ -5,30 +5,30 @@
 extern SemaphoreHandle_t xSerialMutex;
 
 // Serial RS-232
-static HardwareSerial SerialRS232(1);
+static HardwareSerial UART1(1);
 
 
 // UART 0
 void initUARTx()
 {
   // Set UART for RS-232 interface
-  SerialRS232.begin(RS232_BAUD, SERIAL_8N1,RS232_RX_PIN,RS232_TX_PIN);  
-  SerialRS232.onReceive(RS232rx); 
+  UART1.begin(RS232_BAUD, SERIAL_8N1,RS232_RX_PIN,RS232_TX_PIN);  
+  UART1.onReceive(UART1Rx); 
 }
 
 
 // Interrupt based data must use Message box
-int32_t RS232rx()
+int32_t UART1Rx()
 {
   Data_t xMessage;
-  char data;
+  int data = 0;
 
   // Drain entire UART1 buffer to prevent FIFO overflow
-  while (SerialRS232.available() > 0)
+  while (UART1.available() > 0)
   {
     // Read all available chars available
-    data = SerialRS232.read();  
-    logf("RS232 Data received %s", data);
+    data = UART1.read();  
+    logf("RS232 Data received %d", data);
   }
 
   // Interrupt based HW can send rx data to the message box
@@ -36,7 +36,7 @@ int32_t RS232rx()
 #if USE_DRVR_MBOX 
   xMessage.sender = xUART;
   xMessage.value = data;
-  snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "RS232");
+  snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "UART1");
   xQueueSend(xQueue, &xMessage, (TickType_t)500);
 #endif
 
@@ -45,11 +45,11 @@ int32_t RS232rx()
 
 // Send UART data to an RS-232 interface, 
 // same as printf() but can be configured independently
-void RS232tx(const char* msg)
+void UART1Tx(const char* msg)
 {
   // Process RS-232 data   
   if (xSemaphoreTake(xSerialMutex, portMAX_DELAY)) {
-      SerialRS232.print(msg);
+      UART1.print(msg);
       xSemaphoreGive(xSerialMutex);
   }
 }

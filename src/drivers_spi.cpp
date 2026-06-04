@@ -11,6 +11,7 @@ void initSPI()
   SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, SS_PIN);
   // Set Slave Select mode.
   pinMode(SPI.pinSS(),OUTPUT);
+  digitalWrite(SPI.pinSS(), HIGH);
 
 #if DEBUG_SPI
   logf("MOSI: ");

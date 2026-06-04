@@ -22,6 +22,9 @@
 #include "freertos/ringbuf.h"
 #include "freertos/task.h"
 
+
+#define DEBUG_FLASH 1
+
 extern SemaphoreHandle_t xSerialMutex;
 
 //#if CONFIG_FREERTOS_UNICORE
@@ -107,9 +110,11 @@ void vTaskADC( void *pvParameters )
 /****************************************************************
  *  Description: 
  * 
- *  Input: Gets SPI data from Mail box
+ *  Input: Gets SPI data from connected SPI devices such as 
+ *         EEPROM and Ethernet. 
  * 
- *  Output: Send and Receives I2C msg
+ *  Output: Send and Receives msg from SPI devices.
+ *          For Testing using the 25LC12 external EEPROM.
  * 
  ****************************************************************
  */ 
@@ -118,13 +123,26 @@ void vTaskSPI( void *pvParameters )
   Data_t xMessage;
   xMessage.sender = xSPI;
 
+  uint8_t dataToWrite[] = { 0x12, 0x34, 0x56, 0x78 };
+  uint8_t dataRead[4];
+  uint32_t address = 0x0000;
+  uint16_t page = 0;
+   
+  uint32_t readSize = sizeof(dataRead);
+  uint32_t writeSize = sizeof(dataToWrite);
+ 
   while(1) 
   {
-    // Write application process here:
-    
+    // Access: Address, Buffer, length
+    eeprom25LC512Write(address, dataToWrite, readSize);
+    eeprom25LC512Read(address, dataRead, writeSize); 
+
+#if DEBUG_FLASH
+    logf("\n Flash Address: %x, Data size: %d, Data: 0x%X, 0x%X, 0x%X, 0x%X \n", address, readSize, dataRead[0], dataRead[1], dataRead[2], dataRead[3]);
+#endif
 
     // Send received data to the message box if needed
-    xMessage.value = 2006;    
+    xMessage.value = dataRead[0];    
     snprintf(xMessage.msg, sizeof(xMessage.msg), "%s", "TaskSPI");
     xQueueSend(xQueue, &xMessage, (TickType_t)500);
     vTaskDelay(pdMS_TO_TICKS(1000));

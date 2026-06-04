@@ -47,8 +47,8 @@
 #define MISO_PIN    D9    // GPIO_NUM_8  
 #define MOSI_PIN    D10   // GPIO_NUM_9  
 
-// SS_PIN Hardwired to VCC on SPI Chip.
-#define SS_PIN      D0    //GPIO_NUM_46 Using pin not exposed in Xiao
+// SS_PIN could be Hardwired to VSS or VCC on SPI Chip.
+#define SS_PIN      D0   
 
 // ADC Sensor
 #define ADC_PIN  A1
@@ -122,5 +122,17 @@ float readMAX31865TempC();
 uint8_t readMAX31865Fault();
 void clearMAX31865Fault();
 */
+
+// Interface to access 25LC512 EEPROM chip. 
+uint8_t eeprom25LC512ReadStatus();
+bool eeprom25LC512WaitReady(uint32_t timeoutMs);
+
+bool eeprom25LC512Read(uint16_t address, uint8_t *buffer, size_t length);
+uint8_t eeprom25LC512ReadByte(uint16_t address);
+
+bool eeprom25LC512Write(uint16_t address, const uint8_t *buffer, size_t length);
+bool eeprom25LC512WriteByte(uint16_t address, uint8_t value);
+
+bool eeprom25LC512Clear(uint8_t fillValue);
 
 #endif

@@ -86,7 +86,7 @@ void timoWifiSta_CallBack(void* arg)
 void initEth()
 {
   esp_efuse_mac_get_default(mac);
-  Ethernet.init(SPI.pinSS());
+  Ethernet.init(SPI.pinSS());  // TODO: needs mutex with eeprom
   Ethernet.begin(mac, localIP);
 
   // Check for Ethernet hardware present

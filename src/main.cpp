@@ -22,10 +22,9 @@
 #include "freertos/ringbuf.h"
 #include "freertos/task.h"
 
-
-#define DEBUG_FLASH 1
-
+// Start up system Mutexes
 extern SemaphoreHandle_t xSerialMutex;
+extern SemaphoreHandle_t xSPIMutex;
 
 //#if CONFIG_FREERTOS_UNICORE
   static const BaseType_t drv_cpu = 0;
@@ -133,12 +132,21 @@ void vTaskSPI( void *pvParameters )
  
   while(1) 
   {
-    // Access: Address, Buffer, length
-    eeprom25LC512Write(address, dataToWrite, readSize);
-    eeprom25LC512Read(address, dataRead, writeSize); 
-
+    // Enable for testing only to prevent early wearout
 #if DEBUG_FLASH
-    logf("\n Flash Address: %x, Data size: %d, Data: 0x%X, 0x%X, 0x%X, 0x%X \n", address, readSize, dataRead[0], dataRead[1], dataRead[2], dataRead[3]);
+    // Access: Address, Buffer, length
+    if (eeprom25LC512Write(address, dataToWrite, writeSize))
+        logf("\n EEPROM Write OK");
+    else
+        logf("\n EEPROM Write Error");
+
+    vTaskDelay(pdMS_TO_TICKS(50));
+
+    if (eeprom25LC512Read(address, dataRead, readSize))
+        logf("\n EEPROM Read Address: %x, Data size: %d, Data: 0x%X, 0x%X, 0x%X, 0x%X \n", address, readSize, dataRead[0], dataRead[1], dataRead[2], dataRead[3]);
+    else
+        logf("\n EEPROM Read Error"); 
+  
 #endif
 
     // Send received data to the message box if needed
@@ -163,12 +171,15 @@ void vTaskI2C( void *pvParameters )
 {
   Data_t xMessage;
   xMessage.sender = xSPI;
-
+  unsigned long i2cData = 0xDEADBEEF;
+  
   while(1) 
   {
 #if DEBUG_I2C
     //Test I2C R/W when device present
-    mI2C(); 
+    I2CTx(i2cData);
+    vTaskDelay(pdMS_TO_TICKS(500));
+    I2CRx();
 #endif    
 
     // Send received data to the message box if needed
@@ -300,9 +311,16 @@ void setup()
   Serial.begin(460800);
   Serial.setDebugOutput(true); 
   delay(1000);  
-  xSerialMutex = xSemaphoreCreateMutex();
 
-  xQueue = xQueueCreate(50, sizeof(Data_t)); 
+  xSerialMutex = xSemaphoreCreateMutex();
+  configASSERT(xSerialMutex != NULL);
+
+  xSPIMutex = xSemaphoreCreateMutex();
+  configASSERT(xSPIMutex != NULL);
+
+  xQueue = xQueueCreate(50, sizeof(Data_t));
+  configASSERT(xQueue != NULL);
+
   if (xQueue != NULL) 
   {   // higher priority may starve loop
       xTaskCreatePinnedToCore(vPrintTsk, "PrintTask", 4096, NULL, 2, &hTskMsgQ, drv_cpu); 

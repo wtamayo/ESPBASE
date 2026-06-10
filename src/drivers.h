@@ -61,7 +61,8 @@
 #define CAN_SPEED           500
 #define CAN_FRAME_MAX_DLC   8
 
-static const int spiClk = 1000000; 
+//static const int spiClk = 1000000; 
+static const int spiClk = 100000; 
 
 // I2C Device(s)
 #define I2C_SLAVE_ADDR 0x55
@@ -90,7 +91,9 @@ int32_t UART1Rx();
 // I2C
 void initI2C();
 void scanI2C();
-void mI2C();
+uint8_t I2CTx(unsigned long i2cData);
+uint8_t I2CRx();
+void testI2CWrite();
 // CAN
 bool writeCAN(CanMessage* message);
 bool readCAN(CanMessage* message);

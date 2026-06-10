@@ -3,6 +3,7 @@
 #include <SPI.h>
 
 extern SemaphoreHandle_t xSerialMutex;
+extern SemaphoreHandle_t xSPIMutex;
 
 // 25LC512 EEPROM constants
 // 512 Kbit = 64 KByte, 16-bit address, 128-byte page write size.
@@ -30,12 +31,18 @@ static inline uint8_t eepromCsPin()
 
 static inline void eepromSelect()
 {
-  digitalWrite(eepromCsPin(), LOW);
+  if (xSemaphoreTake(xSPIMutex, portMAX_DELAY)) {
+      digitalWrite(eepromCsPin(), LOW);
+      xSemaphoreGive(xSPIMutex);
+  }
 }
 
 static inline void eepromDeselect()
 {
-  digitalWrite(eepromCsPin(), HIGH);
+  if (xSemaphoreTake(xSPIMutex, portMAX_DELAY)) {
+      digitalWrite(eepromCsPin(), HIGH);
+      xSemaphoreGive(xSPIMutex);
+  }
 }
 
 static void eepromWriteEnable()

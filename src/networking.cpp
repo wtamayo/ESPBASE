@@ -2,6 +2,8 @@
 
 /************* WIFI *************/ 
 
+extern SemaphoreHandle_t xSPIMutex;
+
 void initWifiAP()
 {
   WiFi.mode(WIFI_AP);   // test
@@ -82,11 +84,16 @@ void timoWifiSta_CallBack(void* arg)
   esp_timer_delete(*(esp_timer_handle_t *)arg); 
 }
 
-
+// TODO: Need to protect all SPI transaction with mutex
 void initEth()
 {
   esp_efuse_mac_get_default(mac);
-  Ethernet.init(SPI.pinSS());  // TODO: needs mutex with eeprom
+  
+  if (xSemaphoreTake(xSPIMutex, portMAX_DELAY)) {
+      Ethernet.init(SPI.pinSS()); // need mutex on SPI.pinSS() 
+      xSemaphoreGive(xSPIMutex);
+  }
+
   Ethernet.begin(mac, localIP);
 
   // Check for Ethernet hardware present

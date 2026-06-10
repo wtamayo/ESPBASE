@@ -5,6 +5,9 @@
 #include <Arduino.h>
 #include <esp_task_wdt.h>
 #include <esp_timer.h>
+#include <memory>
+
+using namespace std;
 
 // MCU and 3CS versions
 const float fwVersions[2] = {1.0,0};
@@ -28,11 +31,14 @@ typedef uint64_t Timeoutus_t;
 #define DEBUG_I2C       0
 #define DEBUG_UART      0
 #define DEBUG_SPI       0
-#define DEBUG_ADC       0
+#define DEBUG_ADC       1
 #define DEBUG_UDP       0
 #define DEBUG_ETH       0
 #define DEBUG_WIFI      0
+#define DEBUG_FLASH     1 
 #define DEBUG_WEB_SRV   0
+
+
 
 // Device writers
 typedef enum {

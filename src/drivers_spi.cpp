@@ -3,6 +3,7 @@
 #include <SPI.h>
 
 extern SemaphoreHandle_t xSerialMutex;
+extern SemaphoreHandle_t xSPIMutex;
 
 
 void initSPI()
@@ -27,14 +28,16 @@ void initSPI()
 #endif    
 }
 
-
+// Must Mutex this when used since SPI SS ping is shared
 void spiCommand(byte data) 
 {
   //use it as you would the regular arduino SPI API
-  SPI.beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE0));
-  digitalWrite(SPI.pinSS(), LOW);   //pull SS slow to prep other end for transfer (commented out, hardwired)
-  SPI.transfer(data);
-  digitalWrite(SPI.pinSS(), HIGH);  //pull ss high to signify end of data transfer (commented out, hardwired)
-  SPI.endTransaction();
+  if (xSemaphoreTake(xSPIMutex, portMAX_DELAY)) {
+      SPI.beginTransaction(SPISettings(spiClk, MSBFIRST, SPI_MODE0));
+      digitalWrite(SPI.pinSS(), LOW);   //pull SS slow to prep other end for transfer (commented out, hardwired)
+      SPI.transfer(data);
+      digitalWrite(SPI.pinSS(), HIGH);  //pull ss high to signify end of data transfer (commented out, hardwired)
+      SPI.endTransaction();
+      xSemaphoreGive(xSPIMutex);
+  }
 }
-

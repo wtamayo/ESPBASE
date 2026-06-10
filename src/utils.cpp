@@ -4,6 +4,7 @@
 
 
 SemaphoreHandle_t xSerialMutex;
+SemaphoreHandle_t xSPIMutex;
 
 void timerCreateStart(esp_timer_create_args_t timerEvent, esp_timer_handle_t* hTimer, Timeoutus_t tout) 
 {
